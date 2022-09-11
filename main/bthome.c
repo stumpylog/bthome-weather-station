@@ -1,6 +1,8 @@
 
 #include "bthome.h"
 
+static const uint16_t OBJECT_FORMAT_SHIFT = 5;
+
 int32_t _write_object_info(enum OBJECT_FORMAT const objectType, enum DATA_TYPE const dataType, uint32_t const dataLen,
                            uint8_t dest[], uint32_t const destLen)
 {

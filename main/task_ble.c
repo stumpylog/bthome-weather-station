@@ -1,4 +1,4 @@
-
+#include "blackboard.h"
 #include "bthome.h"
 #include "esp_bt.h"
 #include "esp_bt_defs.h"
@@ -7,6 +7,7 @@
 #include "esp_gatt_defs.h"
 #include "esp_gattc_api.h"
 #include "esp_log.h"
+#include "freertos/task.h"
 #include "nvs_flash.h"
 #include "tasks.h"
 
@@ -27,7 +28,7 @@ static const esp_bt_uuid_t service_uuid = {
     .len = ESP_UUID_LEN_16,
     .uuid =
         {
-            .uuid16 = 0x181c,
+            .uuid16 = UNENCRYPTED_SERVICE_UUID,
         },
 };
 
@@ -71,13 +72,24 @@ void task_ble_entry(void* params)
         // Clear all bits on exit to reset
         if (pdTRUE == xTaskNotifyWait(0, 0xFFFFFFFF, NULL, 500 / portTICK_PERIOD_MS))
         {
+            // Encode sensor data
+            int32_t bytes = temperature(blackboard.sensors.temperature, &advertData[0], 256);
+
+            bytes += humidity(blackboard.sensors.humidity, &advertData[bytes], 256);
+
+            // Set advertising length
+            ble_adv_data.service_data_len = bytes;
+
+            // Configure advertising data
+            ESP_ERROR_CHECK(esp_ble_gap_config_adv_data(&ble_adv_data));
+
+            // Begin advertising
+            ESP_ERROR_CHECK(esp_ble_gap_start_advertising(&ble_adv_params));
+
+            vTaskDelay(500 / portTICK_PERIOD_MS);
         }
         else
         {
         }
-
-        // Build advertise data
-        // esp_ble_gap_config_adv_data
-        // esp_ble_gap_start_advertising(&ble_adv_params);
     }
 }

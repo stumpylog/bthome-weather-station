@@ -1,11 +1,11 @@
 
 
 #ifndef BT_HOME_H_
-    #define BT_HOME_H
+#define BT_HOME_H_
 
-    #include <stdint.h>
+#include <stdint.h>
 
-const uint16_t UNENCRYPTED_SERVICE_UUID = 0x181c;
+static const uint16_t UNENCRYPTED_SERVICE_UUID = 0x181c;
 
 enum OBJECT_FORMAT
 {
@@ -15,8 +15,6 @@ enum OBJECT_FORMAT
     STRING       = 0b011,
     MAC          = 0b100
 };
-
-const uint16_t OBJECT_FORMAT_SHIFT = 5;
 
 enum DATA_TYPE
 {
