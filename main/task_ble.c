@@ -1,5 +1,5 @@
-#include "blackboard.h"
-#include "bthome.h"
+#include <stdint.h>
+
 #include "esp_bt.h"
 #include "esp_bt_defs.h"
 #include "esp_bt_main.h"
@@ -9,9 +9,12 @@
 #include "esp_log.h"
 #include "freertos/task.h"
 #include "nvs_flash.h"
-#include "tasks.h"
 
-#include <stdint.h>
+#include "tasks.h"
+#include "blackboard.h"
+#include "bthome.h"
+
+
 
 static esp_ble_adv_params_t ble_adv_params = {
     .adv_int_min       = 0x20,
