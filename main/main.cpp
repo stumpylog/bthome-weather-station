@@ -1,3 +1,7 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "tasks.h"
@@ -8,3 +12,7 @@ void app_main(void)
 
     xTaskCreatePinnedToCore(&task_read_sensors_entry, "sensor task", 2048, NULL, 5, NULL, 1);
 }
+
+#ifdef __cplusplus
+}
+#endif

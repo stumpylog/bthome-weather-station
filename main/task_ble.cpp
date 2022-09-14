@@ -1,5 +1,9 @@
-#include <stdint.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+#include "blackboard.h"
+#include "bthome.h"
 #include "esp_bt.h"
 #include "esp_bt_defs.h"
 #include "esp_bt_main.h"
@@ -9,12 +13,9 @@
 #include "esp_log.h"
 #include "freertos/task.h"
 #include "nvs_flash.h"
-
 #include "tasks.h"
-#include "blackboard.h"
-#include "bthome.h"
 
-
+#include <stdint.h>
 
 static esp_ble_adv_params_t ble_adv_params = {
     .adv_int_min       = 0x20,
@@ -27,11 +28,11 @@ static esp_ble_adv_params_t ble_adv_params = {
 
 static uint8_t advertData[256];
 
-static const esp_bt_uuid_t service_uuid = {
+static esp_bt_uuid_t service_uuid = {
     .len = ESP_UUID_LEN_16,
     .uuid =
         {
-            .uuid16 = UNENCRYPTED_SERVICE_UUID,
+            .uuid16 = bthome::constants::UNENCRYPTED_SERVICE_UUID,
         },
 };
 
@@ -46,7 +47,7 @@ static esp_ble_adv_data_t ble_adv_data = {.set_scan_rsp        = false,
                                           .service_data_len    = 0,
                                           .p_service_data      = &advertData[0],
                                           .service_uuid_len    = service_uuid.len,
-                                          .p_service_uuid      = &service_uuid.uuid.uuid16};
+                                          .p_service_uuid      = service_uuid.uuid.uuid128};
 
 void ble_init(void)
 {
@@ -73,12 +74,12 @@ void task_ble_entry(void* params)
     {
         // Wait for sensor task notify
         // Clear all bits on exit to reset
-        if (pdTRUE == xTaskNotifyWait(0, 0xFFFFFFFF, NULL, 500 / portTICK_PERIOD_MS))
+        if (pdTRUE == xTaskNotifyWait(0, 0xFFFFFFFF, NULL, 1000 / portTICK_PERIOD_MS))
         {
             // Encode sensor data
-            int32_t bytes = temperature(blackboard.sensors.temperature, &advertData[0], 256);
+            int32_t bytes = bthome::encode::temperature(blackboard.sensors.temperature, &advertData[0], 256);
 
-            bytes += humidity(blackboard.sensors.humidity, &advertData[bytes], 256);
+            bytes += bthome::encode::humidity(blackboard.sensors.humidity, &advertData[bytes], 256);
 
             // Set advertising length
             ble_adv_data.service_data_len = bytes;
@@ -93,6 +94,11 @@ void task_ble_entry(void* params)
         }
         else
         {
+            // Handle the timeout somehow
         }
     }
 }
+
+#ifdef __cplusplus
+}
+#endif
