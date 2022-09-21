@@ -10,13 +10,11 @@ namespace bthome
 
     namespace encode
     {
-
-        static constexpr uint16_t OBJECT_FORMAT_SHIFT = 5;
-
         int32_t _write_object_info(enum constants::OBJECT_FORMAT const objectType,
                                    enum constants::DATA_TYPE const dataType, uint32_t const dataLen, uint8_t dest[],
                                    uint32_t const destLen)
         {
+            static constexpr uint16_t OBJECT_FORMAT_SHIFT = 5;
             int32_t bytesWritten = -1;
 
             // Plus 1 to account for the data type byte
@@ -47,7 +45,7 @@ namespace bthome
             bytesWritten = _write_object_info(constants::OBJECT_FORMAT::FLOAT, constants::DATA_TYPE::TEMPERATURE, 2,
                                               dest, destLen);
 
-            bytesWritten += _write_data_bytes(temp_val, &dest[2], destLen - bytesWritten);
+            bytesWritten += _write_data_bytes(temp_val, &dest[bytesWritten], destLen - bytesWritten);
 
             return bytesWritten;
         }
@@ -61,7 +59,7 @@ namespace bthome
             bytesWritten = _write_object_info(constants::OBJECT_FORMAT::UNSIGNED_INT, constants::DATA_TYPE::HUMIDITY, 2,
                                               dest, destLen);
 
-            bytesWritten += _write_data_bytes(scaled_humidity, &dest[2], destLen - bytesWritten);
+            bytesWritten += _write_data_bytes(scaled_humidity, &dest[bytesWritten], destLen - bytesWritten);
 
             return bytesWritten;
         }
@@ -75,9 +73,32 @@ namespace bthome
             bytesWritten = _write_object_info(constants::OBJECT_FORMAT::UNSIGNED_INT, constants::DATA_TYPE::BATTERY, 2,
                                               dest, destLen);
 
-            bytesWritten += _write_data_bytes(scaled_battery, &dest[2], destLen - bytesWritten);
+            bytesWritten += _write_data_bytes(scaled_battery, &dest[bytesWritten], destLen - bytesWritten);
 
             return bytesWritten;
+        }
+
+
+        int32_t pressure(float const pressure, uint8_t dest[], uint32_t destLen)
+        {
+            int32_t bytesWritten = -1;
+
+            uint16_t const scaled_pressure = static_cast<uint16_t>(pressure);
+
+            bytesWritten = _write_object_info(constants::OBJECT_FORMAT::UNSIGNED_INT, constants::DATA_TYPE::PRESSURE, 2,
+                                              dest, destLen);
+
+            bytesWritten += _write_data_bytes(scaled_pressure, &dest[bytesWritten], destLen - bytesWritten);
+
+            return bytesWritten;
+        }
+
+        int32_t packet_id(uint8_t const packetId, uint8_t dest[], uint32_t destLen)
+        {
+            bytesWritten = _write_object_info(constants::OBJECT_FORMAT::UNSIGNED_INT, constants::DATA_TYPE::PACKET_ID, 1,
+                                              dest, destLen);
+
+            bytesWritten += _write_data_bytes(packetId, &dest[bytesWritten], destLen - bytesWritten);
         }
 
     }; // namespace encode

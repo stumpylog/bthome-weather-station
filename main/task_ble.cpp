@@ -17,6 +17,8 @@ extern "C" {
 
 #include <stdint.h>
 
+static constexpr SLEEP_15_MINUTES{900000 / portTICK_PERIOD_MS};
+
 static esp_ble_adv_params_t ble_adv_params = {
     .adv_int_min       = 0x20,
     .adv_int_max       = 0x40,
@@ -47,7 +49,7 @@ static esp_ble_adv_data_t ble_adv_data = {.set_scan_rsp        = false,
                                           .service_data_len    = 0,
                                           .p_service_data      = &advertData[0],
                                           .service_uuid_len    = service_uuid.len,
-                                          .p_service_uuid      = service_uuid.uuid.uuid128};
+                                          .p_service_uuid      = &service_uuid.uuid.uuid128[0]};
 
 void ble_init(void)
 {
@@ -64,6 +66,12 @@ void ble_init(void)
     ESP_ERROR_CHECK(esp_ble_gap_set_device_name("weather-station"));
 }
 
+void ble_deinit(void) {
+    ESP_ERROR_CHECK(esp_bluedroid_disable());
+    ESP_ERROR_CHECK(esp_bluedroid_deinit());
+    ESP_ERROR_CHECK(esp_bt_controller_disable());
+}
+
 void task_ble_entry(void* params)
 {
     ble_init();
@@ -77,9 +85,13 @@ void task_ble_entry(void* params)
         if (pdTRUE == xTaskNotifyWait(0, 0xFFFFFFFF, NULL, 1000 / portTICK_PERIOD_MS))
         {
             // Encode sensor data
-            int32_t bytes = bthome::encode::temperature(blackboard.sensors.temperature, &advertData[0], 256);
+            int32_t bytes = bthome::encode::packet_id(blackboard.system.bootCount, &advertData[0], 256)
 
-            bytes += bthome::encode::humidity(blackboard.sensors.humidity, &advertData[bytes], 256);
+            bytes += bthome::encode::temperature(blackboard.sensors.temperature, &advertData[0], 256 - bytes);
+
+            bytes += bthome::encode::humidity(blackboard.sensors.humidity, &advertData[bytes], 256 - bytes);
+
+            bytes += bthome::encode::pressure(blackboard.sensors.pressure, &advertData[bytes], 256 - bytes);
 
             // Set advertising length
             ble_adv_data.service_data_len = bytes;
@@ -90,7 +102,17 @@ void task_ble_entry(void* params)
             // Begin advertising
             ESP_ERROR_CHECK(esp_ble_gap_start_advertising(&ble_adv_params));
 
+            // Wait 500ms for a few advertisement to go out
             vTaskDelay(500 / portTICK_PERIOD_MS);
+
+            // Stop advertising data
+            ESP_ERROR_CHECK(esp_ble_gap_stop_advertising());
+
+            // De-init all BLE related things
+            ble_deinit();
+
+            // Enter deep sleep
+            esp_deep_sleep_start(SLEEP_15_MINUTES);
         }
         else
         {
