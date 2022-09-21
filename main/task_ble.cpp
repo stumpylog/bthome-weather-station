@@ -11,13 +11,14 @@ extern "C" {
 #include "esp_gatt_defs.h"
 #include "esp_gattc_api.h"
 #include "esp_log.h"
+#include "esp_sleep.h"
 #include "freertos/task.h"
 #include "nvs_flash.h"
 #include "tasks.h"
 
 #include <stdint.h>
 
-static constexpr SLEEP_15_MINUTES{900000 / portTICK_PERIOD_MS};
+static constexpr uint64_t SLEEP_15_MINUTES {900000 / portTICK_PERIOD_MS};
 
 static esp_ble_adv_params_t ble_adv_params = {
     .adv_int_min       = 0x20,
@@ -66,7 +67,8 @@ void ble_init(void)
     ESP_ERROR_CHECK(esp_ble_gap_set_device_name("weather-station"));
 }
 
-void ble_deinit(void) {
+void ble_deinit(void)
+{
     ESP_ERROR_CHECK(esp_bluedroid_disable());
     ESP_ERROR_CHECK(esp_bluedroid_deinit());
     ESP_ERROR_CHECK(esp_bt_controller_disable());
@@ -85,7 +87,7 @@ void task_ble_entry(void* params)
         if (pdTRUE == xTaskNotifyWait(0, 0xFFFFFFFF, NULL, 1000 / portTICK_PERIOD_MS))
         {
             // Encode sensor data
-            int32_t bytes = bthome::encode::packet_id(blackboard.system.bootCount, &advertData[0], 256)
+            int32_t bytes = bthome::encode::packet_id(blackboard.system.bootCount, &advertData[0], 256);
 
             bytes += bthome::encode::temperature(blackboard.sensors.temperature, &advertData[0], 256 - bytes);
 
@@ -112,7 +114,7 @@ void task_ble_entry(void* params)
             ble_deinit();
 
             // Enter deep sleep
-            esp_deep_sleep_start(SLEEP_15_MINUTES);
+            esp_deep_sleep(SLEEP_15_MINUTES);
         }
         else
         {

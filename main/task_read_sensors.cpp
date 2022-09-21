@@ -3,12 +3,11 @@
 extern "C" {
 #endif
 
+#include "BME280.h"
+#include "blackboard.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
-
 #include "tasks.h"
-#include "blackboard.h"
-#include "BME280.h"
 
 #define I2C_MASTER_SCL_IO  5         /*!<gpio number for i2c master clock  */
 #define I2C_MASTER_SDA_IO  6         /*!<gpio number for i2c master data */
@@ -32,27 +31,27 @@ i2c_port_t const i2c_master_port = I2C_NUM_0;
 
 void i2c_init(void)
 {
-
     // Configure the hardware I2C port
     ESP_ERROR_CHECK(i2c_param_config(i2c_master_port, &conf));
-    ESP_ERROR_CHECK(i2c_driver_install(i2c_master_port, I2C_MODE_MASTER, 0, 0, ESP_INTR_FLAG_IRAM);)
+    ESP_ERROR_CHECK(i2c_driver_install(i2c_master_port, I2C_MODE_MASTER, 0, 0, ESP_INTR_FLAG_IRAM));
 }
 
-void read_sensor_data(void) {
+void read_sensor_data(void)
+{
     // Create a sensor.  This will initialize and calibrate from the sensor
     sensors::BME280 sensor(i2c_master_port);
 
     // Read data.  Note that temperature is used in humidity and pressure
     // readings, so it must be done first
     blackboard.sensors.temperature = sensor.readTemperature();
-    blackboard.sensors.humidity = sensor.readHumidity();
-    blackboard.sensors.pressure = sensor.readPressure();
+    blackboard.sensors.humidity    = sensor.readHumidity();
+    blackboard.sensors.pressure    = sensor.readPressure();
 
     // For the lowest power, return the sensor to sleep mode
     sensor.setSleepMode();
 }
 
-void task_read_sensors_entry(void)
+void task_read_sensors_entry(void* params)
 {
 
     // Configure the i2c parameters

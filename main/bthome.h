@@ -28,11 +28,11 @@ namespace bthome
 
         enum class DATA_TYPE : uint8_t
         {
-            PACKET_ID = 0x00;
+            PACKET_ID   = 0x00,
             BATTERY     = 0x01,
             TEMPERATURE = 0x02,
             HUMIDITY    = 0x03,
-            PRESSURE = 0x04,
+            PRESSURE    = 0x04,
         };
 
     }; // namespace constants
