@@ -5,6 +5,9 @@ extern "C" {
 
 #include "BME280.h"
 
+#include "driver/i2c.h"
+#include "endian.h"
+
 #include <math.h>
 
 namespace sensors
@@ -12,10 +15,43 @@ namespace sensors
     BME280::BME280(i2c_port_t i2cDriver) : _i2cDriver(i2cDriver)
     {
         // Soft reset the sensor
-        // write8(BME280_REGISTER_SOFTRESET, 0xB6);
+        write8(BME280::REGISTER::SOFTRESET, 0xB6);
+
         // wait 10ms
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+
         // Wait to finish reading calibration
+        uint8_t rStatus = read8(BME280::REGISTER::STATUS);
+        while ((rStatus & (1 << 0)) != 0)
+        {
+            vTaskDelay(1 / portTICK_PERIOD_MS);
+            rStatus = read8(BME280::REGISTER::STATUS);
+        }
+
         // Read calibration data
+        _calibrationData.dig_T1 = read16_LE(BME280::REGISTER::DIG_T1);
+        _calibrationData.dig_T2 = readS16_LE(BME280::REGISTER::DIG_T2);
+        _calibrationData.dig_T3 = readS16_LE(BME280::REGISTER::DIG_T3);
+
+        _calibrationData.dig_P1 = read16_LE(BME280::REGISTER::DIG_P1);
+        _calibrationData.dig_P2 = readS16_LE(BME280::REGISTER::DIG_P2);
+        _calibrationData.dig_P3 = readS16_LE(BME280::REGISTER::DIG_P3);
+        _calibrationData.dig_P4 = readS16_LE(BME280::REGISTER::DIG_P4);
+        _calibrationData.dig_P5 = readS16_LE(BME280::REGISTER::DIG_P5);
+        _calibrationData.dig_P6 = readS16_LE(BME280::REGISTER::DIG_P6);
+        _calibrationData.dig_P7 = readS16_LE(BME280::REGISTER::DIG_P7);
+        _calibrationData.dig_P8 = readS16_LE(BME280::REGISTER::DIG_P8);
+        _calibrationData.dig_P9 = readS16_LE(BME280::REGISTER::DIG_P9);
+
+        _calibrationData.dig_H1 = read8(BME280::REGISTER::DIG_H1);
+        _calibrationData.dig_H2 = readS16_LE(BME280::REGISTER::DIG_H2);
+        _calibrationData.dig_H3 = read8(BME280::REGISTER::DIG_H3);
+        _calibrationData.dig_H4 =
+            ((int8_t)read8(BME280::REGISTER::DIG_H4) << 4) | (read8(BME280::REGISTER::DIG_H5) & 0xF);
+        _calibrationData.dig_H5 =
+            ((int8_t)read8(BME280::REGISTER::DIG_H6) << 4) | (read8(BME280::REGISTER::DIG_H5) >> 4);
+        _calibrationData.dig_H6 = (int8_t)read8(BME280::REGISTER::DIG_H6);
+
         // Wait 100ms
     }
 
@@ -32,33 +68,53 @@ namespace sensors
     uint8_t BME280::read8(BME280::REGISTER reg)
     {
         uint8_t buffer[1];
-        // i2c_master_write_read_device
-        return 0;
+        buffer[0] = static_cast<uint8_t>(reg);
+        ESP_ERROR_CHECK(i2c_master_write_read_device(_i2cDriver, BME280_ADDRESS,
+                                                     // Write
+                                                     &buffer[0], 1,
+                                                     // Read
+                                                     &buffer[0], 1, 20 / portTICK_PERIOD_MS));
+        return buffer[0];
     }
 
     uint16_t BME280::read16(BME280::REGISTER reg)
     {
         uint8_t buffer[2];
-        return 0;
+        buffer[0] = static_cast<uint8_t>(reg);
+        ESP_ERROR_CHECK(i2c_master_write_read_device(_i2cDriver, BME280_ADDRESS,
+                                                     // Write
+                                                     &buffer[0], 1,
+                                                     // Read
+                                                     &buffer[0], 2, 20 / portTICK_PERIOD_MS));
+        return uint16_t(buffer[0]) << 8 | uint16_t(buffer[1]);
     }
 
     int16_t BME280::readS16(BME280::REGISTER reg)
     {
-        uint8_t buffer[2];
-        return 0;
+        return static_cast<int16_t>(read16(reg));
     }
 
     uint32_t BME280::read24(BME280::REGISTER reg)
     {
         uint8_t buffer[3];
-        return 0;
+        buffer[0] = static_cast<uint8_t>(reg);
+        ESP_ERROR_CHECK(i2c_master_write_read_device(_i2cDriver, BME280_ADDRESS,
+                                                     // Write
+                                                     &buffer[0], 1,
+                                                     // Read
+                                                     &buffer[0], 3, 20 / portTICK_PERIOD_MS));
+        return uint32_t(buffer[0]) << 16 | uint32_t(buffer[1]) << 8 | uint32_t(buffer[2]);
     }
 
     uint16_t BME280::read16_LE(BME280::REGISTER reg)
     {
-        uint8_t buffer[2];
-        // letoh16
-        return 0;
+        uint16_t temp = read16(reg);
+        return (temp >> 8) | (temp << 8);
+    }
+
+    int16_t BME280::readS16_LE(BME280::REGISTER reg)
+    {
+        return (int16_t)read16_LE(reg);
     }
 
     float BME280::readTemperature(void)
@@ -66,8 +122,11 @@ namespace sensors
         int32_t var1, var2;
 
         int32_t adc_T = read24(BME280::REGISTER::TEMPDATA);
-        if (adc_T == 0x800000) // value in case temp measurement was disabled
+        // value in case temp measurement was disabled
+        if (adc_T == 0x800000)
+        {
             return NAN;
+        }
         adc_T >>= 4;
 
         var1 = (int32_t)((adc_T / 8) - ((int32_t)_calibrationData.dig_T1 * 2));
@@ -86,11 +145,12 @@ namespace sensors
     {
         int64_t var1, var2, var3, var4;
 
-        readTemperature(); // must be done first to get t_fine
-
         int32_t adc_P = read24(BME280::REGISTER::PRESSUREDATA);
-        if (adc_P == 0x800000) // value in case pressure measurement was disabled
+        // value in case pressure measurement was disabled
+        if (adc_P == 0x800000)
+        {
             return NAN;
+        }
         adc_P >>= 4;
 
         var1 = ((int64_t)t_fine) - 128000;
@@ -122,11 +182,12 @@ namespace sensors
     {
         int32_t var1, var2, var3, var4, var5;
 
-        readTemperature(); // must be done first to get t_fine
-
         int32_t adc_H = read16(BME280::REGISTER::HUMIDDATA);
-        if (adc_H == 0x8000) // value in case humidity measurement was disabled
+        // value in case humidity measurement was disabled
+        if (adc_H == 0x8000)
+        {
             return NAN;
+        }
 
         var1       = t_fine - ((int32_t)76800);
         var2       = (int32_t)(adc_H * 16384);
@@ -147,7 +208,10 @@ namespace sensors
         return (float)H / 1024.0;
     }
 
-    void BME280::setSleepMode(void) { }
+    void BME280::setSleepMode(void)
+    {
+        write8(BME280::REGISTER::CONTROL, static_cast<uint8_t>(BME280::SENSOR_MODE::MODE_SLEEP));
+    }
 
 } // namespace sensors
 
