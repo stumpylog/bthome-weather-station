@@ -14,5 +14,7 @@
     "files.associations": {
         "*.ipp": "c",
         "esp_bt_defs.h": "c"
-    }
+    },
+    "idf.flashType": "UART",
+    "idf.port": "/dev/ttyUSB0"
 }

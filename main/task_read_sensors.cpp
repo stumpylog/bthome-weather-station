@@ -7,6 +7,7 @@ extern "C" {
 #include "blackboard.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
+#include "esp_log.h"
 #include "tasks.h"
 
 #define I2C_MASTER_SCL_IO  5         /*!<gpio number for i2c master clock  */
@@ -31,6 +32,7 @@ i2c_port_t const i2c_master_port = I2C_NUM_0;
 
 void i2c_init(void)
 {
+    ESP_LOGI("sensor_task", "Starting i2c init");
     // Configure the hardware I2C port
     ESP_ERROR_CHECK(i2c_param_config(i2c_master_port, &conf));
     ESP_ERROR_CHECK(i2c_driver_install(i2c_master_port, I2C_MODE_MASTER, 0, 0, ESP_INTR_FLAG_IRAM));
@@ -55,10 +57,12 @@ void task_read_sensors_entry(void* params)
 {
 
     // Configure the i2c parameters
-    i2c_init();
+    // i2c_init();
 
     // Populate the sensor data
-    read_sensor_data();
+    // read_sensor_data();
+    // TODO Temporary
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
 
     // Notify the BLE task that data is ready
     xTaskNotifyGive(blackboard.system.bleTaskHandle);

@@ -17,7 +17,7 @@ The project **sample_project** contains one source file in C language [main.c](m
 
 ESP-IDF projects are built using CMake. The project build configuration is contained in `CMakeLists.txt`
 files that provide set of directives and instructions describing the project's source files and targets
-(executable, library, or both). 
+(executable, library, or both).
 
 Below is short explanation of remaining files in the project folder.
 
@@ -28,5 +28,14 @@ Below is short explanation of remaining files in the project folder.
 │   └── main.c
 └── README.md                  This is the file you are currently reading
 ```
-Additionally, the sample project contains Makefile and component.mk files, used for the legacy Make based build system. 
+Additionally, the sample project contains Makefile and component.mk files, used for the legacy Make based build system.
 They are not used or needed when building with CMake and idf.py.
+
+### Working packet
+02 01 06
+0B 09 6D 79 42 54 48 6F 6D 65 5F 31
+0B 16 1C 18 23 02 C4 09 03 09 0B 00
+
+02 01 06
+05 09 74 65 73 74
+00 16 1C 18 02 00 02 00 43 02 00 00 03 03 00 00 03 04 00 00

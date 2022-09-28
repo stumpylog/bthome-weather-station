@@ -3,12 +3,16 @@ extern "C" {
 #endif
 
 #include "blackboard.h"
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "tasks.h"
 
 void app_main(void)
 {
+
+    ESP_LOGI("main", "Starting up");
+
     // Read items from NVS
     blackboard_init();
 
