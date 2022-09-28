@@ -108,7 +108,7 @@ uint8_t build_data_advert(uint8_t data[])
     data[8] = static_cast<uint8_t>('s');
     bytes++;
 
-    data[9] = 17;
+    data[9] = 19;
     bytes++;
 
     data[10] = ESP_BLE_AD_TYPE_SERVICE_DATA;
@@ -121,11 +121,11 @@ uint8_t build_data_advert(uint8_t data[])
 
     bytes += bthome::encode::packet_id(blackboard.system.bootCount, &data[bytes], 64);
 
+    bytes += bthome::encode::pressure(blackboard.sensors.pressure, &data[bytes], 64 - bytes);
+
     bytes += bthome::encode::temperature(blackboard.sensors.temperature, &data[bytes], 64 - bytes);
 
     bytes += bthome::encode::humidity(blackboard.sensors.humidity, &data[bytes], 64 - bytes);
-
-    bytes += bthome::encode::pressure(blackboard.sensors.pressure, &data[bytes], 64 - bytes);
 
     return bytes;
 }

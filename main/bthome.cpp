@@ -82,7 +82,7 @@ namespace bthome
         {
             int32_t bytesWritten = -1;
 
-            uint16_t const scaled_pressure = static_cast<uint16_t>(pressure);
+            uint16_t const scaled_pressure = static_cast<uint16_t>(10000 * pressure);
 
             bytesWritten = _write_object_info(constants::OBJECT_FORMAT::UNSIGNED_INT, constants::DATA_TYPE::PRESSURE, 2,
                                               dest, destLen);
