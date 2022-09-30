@@ -1,0 +1,26 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci-checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout repository
+        uses: actions/checkout@v3
+      -
+        uses: actions/cache@v3
+        with:
+          path: build/
+          key: ${{ runner.os }}-esp-idf-v4.4
+      -
+        name: esp-idf build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v4.4
+          target: esp32
+          path: "."

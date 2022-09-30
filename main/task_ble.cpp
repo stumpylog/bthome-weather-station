@@ -36,7 +36,6 @@ static esp_ble_adv_params_t ble_adv_params = {
 
 static uint8_t advertData[64];
 
-
 void ble_init(void)
 {
     ESP_LOGI(BLE_TASK_NAME, "Starting BLE init");
