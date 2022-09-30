@@ -17,7 +17,7 @@ void app_main(void)
     blackboard_init();
 
     xTaskCreatePinnedToCore(&task_ble_entry,                  // task
-                            "ble task",                       // task name
+                            BLE_TASK_NAME,                    // task name
                             2048,                             // stack size
                             NULL,                             // parameters
                             5,                                // priority
@@ -26,7 +26,7 @@ void app_main(void)
     );
 
     xTaskCreatePinnedToCore(&task_read_sensors_entry,            // task
-                            "sensor task",                       // task name
+                            SENSOR_TASk_NAME,                    // task name
                             2048,                                // stack size
                             NULL,                                // parameters
                             5,                                   // priority

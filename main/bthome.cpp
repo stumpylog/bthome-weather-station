@@ -5,6 +5,13 @@ extern "C" {
 
 #include "bthome.h"
 
+#include "endian.h"
+#include "esp_log.h"
+
+#include <cstring>
+
+#define NAME "bthome"
+
 namespace bthome
 {
 
@@ -38,12 +45,11 @@ namespace bthome
 
         int32_t temperature(float const temperature, uint8_t dest[], uint32_t const destLen)
         {
-            int32_t bytesWritten = -1;
-
+            int32_t bytesWritten   = -1;
             int16_t const temp_val = static_cast<int16_t>(100.0 * temperature);
 
-            bytesWritten = _write_object_info(constants::OBJECT_FORMAT::FLOAT, constants::DATA_TYPE::TEMPERATURE, 2,
-                                              dest, destLen);
+            bytesWritten = _write_object_info(constants::OBJECT_FORMAT::SIGNED_INT, constants::DATA_TYPE::TEMPERATURE,
+                                              2, dest, destLen);
 
             bytesWritten += _write_data_bytes(temp_val, &dest[bytesWritten], destLen - bytesWritten);
 
@@ -54,7 +60,7 @@ namespace bthome
         {
             int32_t bytesWritten = -1;
 
-            uint16_t const scaled_humidity = static_cast<uint16_t>((10000 * humidity) / UINT16_MAX);
+            uint16_t const scaled_humidity = static_cast<uint16_t>((100.0 * humidity));
 
             bytesWritten = _write_object_info(constants::OBJECT_FORMAT::UNSIGNED_INT, constants::DATA_TYPE::HUMIDITY, 2,
                                               dest, destLen);
@@ -82,12 +88,19 @@ namespace bthome
         {
             int32_t bytesWritten = -1;
 
-            uint16_t const scaled_pressure = static_cast<uint16_t>(10000 * pressure);
+            uint32_t const scaled_pressure = static_cast<uint32_t>(100.0 * pressure);
 
-            bytesWritten = _write_object_info(constants::OBJECT_FORMAT::UNSIGNED_INT, constants::DATA_TYPE::PRESSURE, 2,
+            bytesWritten = _write_object_info(constants::OBJECT_FORMAT::UNSIGNED_INT, constants::DATA_TYPE::PRESSURE, 3,
                                               dest, destLen);
 
-            bytesWritten += _write_data_bytes(scaled_pressure, &dest[bytesWritten], destLen - bytesWritten);
+            dest[bytesWritten] = scaled_pressure & 0xff;
+            bytesWritten++;
+
+            dest[bytesWritten] = (scaled_pressure >> 8) & 0xff;
+            bytesWritten++;
+
+            dest[bytesWritten] = (scaled_pressure >> 16) & 0xff;
+            bytesWritten++;
 
             return bytesWritten;
         }

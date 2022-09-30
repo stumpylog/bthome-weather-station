@@ -2,13 +2,15 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 #include "BME280.h"
 
 #include "driver/i2c.h"
 #include "endian.h"
+#include "esp_log.h"
 
 #include <math.h>
+
+#define NAME "bme280"
 
 namespace sensors
 {
@@ -18,13 +20,13 @@ namespace sensors
         write8(BME280::REGISTER::SOFTRESET, 0xB6);
 
         // wait 10ms
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
 
         // Wait to finish reading calibration
         uint8_t rStatus = read8(BME280::REGISTER::STATUS);
         while ((rStatus & (1 << 0)) != 0)
         {
-            vTaskDelay(1 / portTICK_PERIOD_MS);
+            vTaskDelay(5 / portTICK_PERIOD_MS);
             rStatus = read8(BME280::REGISTER::STATUS);
         }
 
@@ -52,7 +54,28 @@ namespace sensors
             ((int8_t)read8(BME280::REGISTER::DIG_H6) << 4) | (read8(BME280::REGISTER::DIG_H5) >> 4);
         _calibrationData.dig_H6 = (int8_t)read8(BME280::REGISTER::DIG_H6);
 
+        _measReg.mode   = static_cast<uint8_t>(SENSOR_MODE::NORMAL);
+        _measReg.osrs_t = static_cast<uint8_t>(SAMPLING_RATE::SAMPLING_X16);
+        _measReg.osrs_p = static_cast<uint8_t>(SAMPLING_RATE::SAMPLING_X16);
+
+        _humReg.osrs_h      = static_cast<uint8_t>(SAMPLING_RATE::SAMPLING_X16);
+        _configReg.filter   = static_cast<uint8_t>(SENSOR_FILTER::FILTER_OFF);
+        _configReg.t_sb     = static_cast<uint8_t>(STANDBY_DURATION::STANDBY_MS_0_5);
+        _configReg.spi3w_en = 0;
+
+        // making sure sensor is in sleep mode before setting configuration
+        // as it otherwise may be ignored
+        write8(REGISTER::CONTROL, static_cast<uint8_t>(SENSOR_MODE::SLEEP));
+
+        // you must make sure to also set REGISTER_CONTROL after setting the
+        // CONTROLHUMID register, otherwise the values won't be applied (see
+        // DS 5.4.3)
+        write8(REGISTER::CONTROLHUMID, _humReg.get());
+        write8(REGISTER::CONFIG, _configReg.get());
+        write8(REGISTER::CONTROL, _measReg.get());
+
         // Wait 100ms
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 
     BME280::~BME280(void) { }
@@ -62,7 +85,7 @@ namespace sensors
         uint8_t buffer[2];
         buffer[0] = static_cast<uint8_t>(reg);
         buffer[1] = value;
-        i2c_master_write_to_device(_i2cDriver, BME280_ADDRESS, &buffer[0], 2, 20 / portTICK_PERIOD_MS);
+        ESP_ERROR_CHECK(i2c_master_write_to_device(_i2cDriver, BME280_ADDRESS, &buffer[0], 2, 20 / portTICK_PERIOD_MS));
     }
 
     uint8_t BME280::read8(BME280::REGISTER reg)
@@ -143,14 +166,38 @@ namespace sensors
 
     float BME280::readHumidity(void)
     {
+        int32_t var1, var2, var3, var4, var5;
+
+        int32_t adc_H = read16(REGISTER::HUMIDDATA);
+        if (adc_H == 0x8000) // value in case humidity measurement was disabled
+            return NAN;
+
+        var1       = t_fine - ((int32_t)76800);
+        var2       = (int32_t)(adc_H * 16384);
+        var3       = (int32_t)(((int32_t)_calibrationData.dig_H4) * 1048576);
+        var4       = ((int32_t)_calibrationData.dig_H5) * var1;
+        var5       = (((var2 - var3) - var4) + (int32_t)16384) / 32768;
+        var2       = (var1 * ((int32_t)_calibrationData.dig_H6)) / 1024;
+        var3       = (var1 * ((int32_t)_calibrationData.dig_H3)) / 2048;
+        var4       = ((var2 * (var3 + (int32_t)32768)) / 1024) + (int32_t)2097152;
+        var2       = ((var4 * ((int32_t)_calibrationData.dig_H2)) + 8192) / 16384;
+        var3       = var5 * var2;
+        var4       = ((var3 / 32768) * (var3 / 32768)) / 128;
+        var5       = var3 - ((var4 * ((int32_t)_calibrationData.dig_H1)) / 16);
+        var5       = (var5 < 0 ? 0 : var5);
+        var5       = (var5 > 419430400 ? 419430400 : var5);
+        uint32_t H = (uint32_t)(var5 / 4096);
+
+        return (float)H / 1024.0;
+    }
+
+    float BME280::readPressure(void)
+    {
         int64_t var1, var2, var3, var4;
 
-        int32_t adc_P = read24(BME280::REGISTER::PRESSUREDATA);
-        // value in case pressure measurement was disabled
-        if (adc_P == 0x800000)
-        {
+        int32_t adc_P = read24(REGISTER::PRESSUREDATA);
+        if (adc_P == 0x800000) // value in case pressure measurement was disabled
             return NAN;
-        }
         adc_P >>= 4;
 
         var1 = ((int64_t)t_fine) - 128000;
@@ -178,39 +225,9 @@ namespace sensors
         return P;
     }
 
-    float BME280::readPressure(void)
-    {
-        int32_t var1, var2, var3, var4, var5;
-
-        int32_t adc_H = read16(BME280::REGISTER::HUMIDDATA);
-        // value in case humidity measurement was disabled
-        if (adc_H == 0x8000)
-        {
-            return NAN;
-        }
-
-        var1       = t_fine - ((int32_t)76800);
-        var2       = (int32_t)(adc_H * 16384);
-        var3       = (int32_t)(((int32_t)_calibrationData.dig_H4) * 1048576);
-        var4       = ((int32_t)_calibrationData.dig_H5) * var1;
-        var5       = (((var2 - var3) - var4) + (int32_t)16384) / 32768;
-        var2       = (var1 * ((int32_t)_calibrationData.dig_H6)) / 1024;
-        var3       = (var1 * ((int32_t)_calibrationData.dig_H3)) / 2048;
-        var4       = ((var2 * (var3 + (int32_t)32768)) / 1024) + (int32_t)2097152;
-        var2       = ((var4 * ((int32_t)_calibrationData.dig_H2)) + 8192) / 16384;
-        var3       = var5 * var2;
-        var4       = ((var3 / 32768) * (var3 / 32768)) / 128;
-        var5       = var3 - ((var4 * ((int32_t)_calibrationData.dig_H1)) / 16);
-        var5       = (var5 < 0 ? 0 : var5);
-        var5       = (var5 > 419430400 ? 419430400 : var5);
-        uint32_t H = (uint32_t)(var5 / 4096);
-
-        return (float)H / 1024.0;
-    }
-
     void BME280::setSleepMode(void)
     {
-        write8(BME280::REGISTER::CONTROL, static_cast<uint8_t>(BME280::SENSOR_MODE::MODE_SLEEP));
+        write8(BME280::REGISTER::CONTROL, static_cast<uint8_t>(SENSOR_MODE::SLEEP));
     }
 
 } // namespace sensors

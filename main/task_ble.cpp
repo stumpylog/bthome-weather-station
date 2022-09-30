@@ -2,12 +2,6 @@
 extern "C" {
 #endif
 
-void task_ble_entry(void* params);
-
-#ifdef __cplusplus
-}
-#endif
-
 #include "blackboard.h"
 #include "bthome.h"
 #include "esp_bt.h"
@@ -23,7 +17,6 @@ void task_ble_entry(void* params);
 #include "tasks.h"
 
 #include <stdint.h>
-#include <string>
 
 static constexpr uint32_t US_TO_S_FACTOR {1000000};
 static constexpr uint32_t SECONDS_PER_MINUTE {60};
@@ -52,7 +45,7 @@ static esp_bt_uuid_t service_uuid = {
 
 void ble_init(void)
 {
-    ESP_LOGI("ble_task", "Starting BLE init");
+    ESP_LOGI(BLE_TASK_NAME, "Starting BLE init");
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 
@@ -68,7 +61,7 @@ void ble_init(void)
     service_uuid.uuid.uuid128[13] = (service_uuid.uuid.uuid16 >> 8) & 0xff;
     service_uuid.uuid.uuid128[12] = service_uuid.uuid.uuid16 & 0xff;
 
-    ESP_LOGI("ble_task", "BLE init completed");
+    ESP_LOGI(BLE_TASK_NAME, "BLE init completed");
 }
 
 void ble_deinit(void)
@@ -136,7 +129,7 @@ void task_ble_entry(void* params)
 
     vTaskDelay(200 / portTICK_PERIOD_MS);
 
-    ESP_LOGI("ble_task", "Entering task loop");
+    ESP_LOGI(BLE_TASK_NAME, "Entering task loop");
 
     for (;;)
     {
@@ -145,14 +138,14 @@ void task_ble_entry(void* params)
         if (pdTRUE == xTaskNotifyWait(0, 0xFFFFFFFF, NULL, 1000 / portTICK_PERIOD_MS))
         {
 
-            ESP_LOGI("ble_task", "Sensor data ready");
+            ESP_LOGI(BLE_TASK_NAME, "Sensor data ready");
 
-            ESP_LOGI("ble_task", "Packet #%d", blackboard.system.bootCount);
+            ESP_LOGI(BLE_TASK_NAME, "Packet #%d", blackboard.system.bootCount);
 
             // Encode sensor data
             uint8_t const dataLength = build_data_advert(&advertData[0]);
 
-            ESP_LOGI("ble_task", "Advert size: %i bytes", dataLength);
+            ESP_LOGI(BLE_TASK_NAME, "Advert size: %i bytes", dataLength);
 
             // Configure advertising data
             ESP_ERROR_CHECK(esp_ble_gap_config_adv_data_raw(&advertData[0], dataLength));
@@ -161,7 +154,7 @@ void task_ble_entry(void* params)
             ESP_ERROR_CHECK(esp_ble_gap_start_advertising(&ble_adv_params));
 
             // Wait 500ms for a few advertisement to go out
-            vTaskDelay(500 / portTICK_PERIOD_MS);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
 
             // Stop advertising data
             ESP_ERROR_CHECK(esp_ble_gap_stop_advertising());
@@ -170,8 +163,8 @@ void task_ble_entry(void* params)
             ble_deinit();
 
             // Enter deep sleep
-            ESP_LOGI("ble_task", "Goodbye!");
-            esp_deep_sleep(SLEEP_5_MINUTES);
+            ESP_LOGI(BLE_TASK_NAME, "Goodbye!");
+            esp_deep_sleep(SLEEP_1_MINUTE);
         }
         else
         {
@@ -179,3 +172,7 @@ void task_ble_entry(void* params)
         }
     }
 }
+
+#ifdef __cplusplus
+}
+#endif

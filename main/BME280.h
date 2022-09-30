@@ -99,9 +99,9 @@ namespace sensors
 
         enum class SENSOR_MODE : uint8_t
         {
-            MODE_SLEEP  = 0b00,
-            MODE_FORCED = 0b01,
-            MODE_NORMAL = 0b11
+            SLEEP  = 0b00,
+            FORCED = 0b01,
+            NORMAL = 0b11
         };
 
         enum class SENSOR_FILTER : uint8_t
@@ -124,6 +124,110 @@ namespace sensors
             STANDBY_MS_500  = 0b100,
             STANDBY_MS_1000 = 0b101
         };
+
+        /**************************************************************************/
+        /*!
+            @brief  config register
+        */
+        /**************************************************************************/
+        struct config
+        {
+            // inactive duration (standby time) in normal mode
+            // 000 = 0.5 ms
+            // 001 = 62.5 ms
+            // 010 = 125 ms
+            // 011 = 250 ms
+            // 100 = 500 ms
+            // 101 = 1000 ms
+            // 110 = 10 ms
+            // 111 = 20 ms
+            unsigned int t_sb : 3; ///< inactive duration (standby time) in normal mode
+
+            // filter settings
+            // 000 = filter off
+            // 001 = 2x filter
+            // 010 = 4x filter
+            // 011 = 8x filter
+            // 100 and above = 16x filter
+            unsigned int filter : 3; ///< filter settings
+
+            // unused - don't set
+            unsigned int none : 1;     ///< unused - don't set
+            unsigned int spi3w_en : 1; ///< unused - don't set
+
+            /// @return combined config register
+            unsigned int get()
+            {
+                return (t_sb << 5) | (filter << 2) | spi3w_en;
+            }
+        };
+        config _configReg; //!< config register object
+
+        /**************************************************************************/
+        /*!
+            @brief  ctrl_meas register
+        */
+        /**************************************************************************/
+        struct ctrl_meas
+        {
+            // temperature oversampling
+            // 000 = skipped
+            // 001 = x1
+            // 010 = x2
+            // 011 = x4
+            // 100 = x8
+            // 101 and above = x16
+            unsigned int osrs_t : 3; ///< temperature oversampling
+
+            // pressure oversampling
+            // 000 = skipped
+            // 001 = x1
+            // 010 = x2
+            // 011 = x4
+            // 100 = x8
+            // 101 and above = x16
+            unsigned int osrs_p : 3; ///< pressure oversampling
+
+            // device mode
+            // 00       = sleep
+            // 01 or 10 = forced
+            // 11       = normal
+            unsigned int mode : 2; ///< device mode
+
+            /// @return combined ctrl register
+            unsigned int get()
+            {
+                return (osrs_t << 5) | (osrs_p << 2) | mode;
+            }
+        };
+        ctrl_meas _measReg; //!< measurement register object
+
+        /**************************************************************************/
+        /*!
+            @brief  ctrl_hum register
+        */
+        /**************************************************************************/
+        struct ctrl_hum
+        {
+            /// unused - don't set
+            unsigned int none : 5;
+
+            // pressure oversampling
+            // 000 = skipped
+            // 001 = x1
+            // 010 = x2
+            // 011 = x4
+            // 100 = x8
+            // 101 and above = x16
+            unsigned int osrs_h : 3; ///< pressure oversampling
+
+            /// @return combined ctrl hum register
+            unsigned int get()
+            {
+                return (osrs_h);
+            }
+        };
+        ctrl_hum _humReg; //!< hum register object
 
         void write8(REGISTER reg, uint8_t value);
         uint8_t read8(REGISTER reg);
