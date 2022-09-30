@@ -36,17 +36,17 @@ namespace bthome
 
         BTHomeSensor::~BTHomeSensor(void) { }
 
-        uint8_t const* const BTHomeSensor::getPayload(void)
+        const uint8_t* BTHomeSensor::getPayload(void) const
         {
             return &this->m_payload[0];
         }
 
-        uint32_t BTHomeSensor::getPayloadSize(void)
+        uint32_t BTHomeSensor::getPayloadSize(void) const
         {
             return this->m_payloadIdx;
         }
 
-        uint8_t BTHomeSensor::minBytes(int64_t scaledData)
+        uint8_t BTHomeSensor::minBytes(int64_t scaledData) const
         {
             if (scaledData == (int8_t)(scaledData & 0xFF))
             {

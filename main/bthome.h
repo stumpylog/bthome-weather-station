@@ -48,11 +48,11 @@ namespace bthome
             BTHomeSensor(enum constants::OBJECT_FORMAT objectType, enum constants::DATA_TYPE dataType,
                          uint64_t const data);
             ~BTHomeSensor(void);
-            uint8_t const* const getPayload(void);
-            uint32_t getPayloadSize(void);
+            const uint8_t* getPayload(void) const;
+            uint32_t getPayloadSize(void) const;
 
           protected:
-            uint8_t minBytes(int64_t scaledData);
+            uint8_t minBytes(int64_t scaledData) const;
             void writeObjectInfo(void);
             void writeObjectData(void);
 
