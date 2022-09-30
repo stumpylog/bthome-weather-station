@@ -16,6 +16,7 @@ extern "C" {
 #include "nvs_flash.h"
 #include "tasks.h"
 
+#include <cstring>
 #include <stdint.h>
 
 static constexpr uint32_t US_TO_S_FACTOR {1000000};
@@ -35,13 +36,6 @@ static esp_ble_adv_params_t ble_adv_params = {
 
 static uint8_t advertData[64];
 
-static esp_bt_uuid_t service_uuid = {
-    .len = ESP_UUID_LEN_16,
-    .uuid =
-        {
-            .uuid16 = bthome::constants::UNENCRYPTED_SERVICE_UUID,
-        },
-};
 
 void ble_init(void)
 {
@@ -56,10 +50,6 @@ void ble_init(void)
 
     ESP_ERROR_CHECK(esp_bluedroid_init());
     ESP_ERROR_CHECK(esp_bluedroid_enable());
-    // ESP_ERROR_CHECK(esp_ble_gap_set_device_name("weather-station"));
-
-    service_uuid.uuid.uuid128[13] = (service_uuid.uuid.uuid16 >> 8) & 0xff;
-    service_uuid.uuid.uuid128[12] = service_uuid.uuid.uuid16 & 0xff;
 
     ESP_LOGI(BLE_TASK_NAME, "BLE init completed");
 }
@@ -101,7 +91,8 @@ uint8_t build_data_advert(uint8_t data[])
     data[8] = static_cast<uint8_t>('s');
     bytes++;
 
-    data[9] = 19;
+    // Service data + UUID length
+    data[9] = 3;
     bytes++;
 
     data[10] = ESP_BLE_AD_TYPE_SERVICE_DATA;
@@ -112,13 +103,29 @@ uint8_t build_data_advert(uint8_t data[])
     data[12] = 0x18;
     bytes++;
 
-    bytes += bthome::encode::packet_id(blackboard.system.bootCount, &data[bytes], 64);
+    bthome::encode::BTHomePacketIdIdSensor packet(static_cast<uint64_t>(blackboard.system.bootCount));
+    bthome::encode::BTHomeTemperatureSensor temp(blackboard.sensors.temperature);
+    bthome::encode::BTHomeHumiditySensor humid(blackboard.sensors.humidity);
+    bthome::encode::BTHomePressureSensor press(blackboard.sensors.pressure);
 
-    bytes += bthome::encode::pressure(blackboard.sensors.pressure, &data[bytes], 64 - bytes);
+    memcpy(&data[bytes], packet.getPayload(), packet.getPayloadSize());
 
-    bytes += bthome::encode::temperature(blackboard.sensors.temperature, &data[bytes], 64 - bytes);
+    bytes += packet.getPayloadSize();
 
-    bytes += bthome::encode::humidity(blackboard.sensors.humidity, &data[bytes], 64 - bytes);
+    memcpy(&data[bytes], temp.getPayload(), temp.getPayloadSize());
+
+    bytes += temp.getPayloadSize();
+
+    memcpy(&data[bytes], humid.getPayload(), humid.getPayloadSize());
+
+    bytes += humid.getPayloadSize();
+
+    memcpy(&data[bytes], press.getPayload(), press.getPayloadSize());
+
+    bytes += press.getPayloadSize();
+
+    // Update length
+    data[9] += packet.getPayloadSize() + temp.getPayloadSize() + humid.getPayloadSize() + press.getPayloadSize();
 
     return bytes;
 }

@@ -5,7 +5,6 @@ extern "C" {
 
 #include "bthome.h"
 
-#include "endian.h"
 #include "esp_log.h"
 
 #include <cstring>
@@ -17,105 +16,113 @@ namespace bthome
 
     namespace encode
     {
-        int32_t _write_object_info(enum constants::OBJECT_FORMAT const objectType,
-                                   enum constants::DATA_TYPE const dataType, uint32_t const dataLen, uint8_t dest[],
-                                   uint32_t const destLen)
+
+        BTHomeSensor::BTHomeSensor(enum constants::OBJECT_FORMAT objectType, enum constants::DATA_TYPE dataType,
+                                   float const scaleFactor, float const data)
+            : m_objectType(objectType), m_dataType(dataType), m_scale {scaleFactor}, m_scaledData {0}, m_payloadIdx {0}
+        {
+            this->m_scaledData = static_cast<uint64_t>(data * this->m_scale);
+            this->writeObjectInfo();
+            this->writeObjectData();
+        }
+
+        BTHomeSensor::BTHomeSensor(enum constants::OBJECT_FORMAT objectType, enum constants::DATA_TYPE dataType,
+                                   uint64_t const data)
+            : m_objectType(objectType), m_dataType(dataType), m_scale {0.0f}, m_scaledData {data}, m_payloadIdx {0}
+        {
+            this->writeObjectInfo();
+            this->writeObjectData();
+        }
+
+        BTHomeSensor::~BTHomeSensor(void) { }
+
+        uint8_t const* const BTHomeSensor::getPayload(void)
+        {
+            return &this->m_payload[0];
+        }
+
+        uint32_t BTHomeSensor::getPayloadSize(void)
+        {
+            return this->m_payloadIdx;
+        }
+
+        uint8_t BTHomeSensor::minBytes(int64_t scaledData)
+        {
+            if (scaledData == (int8_t)(scaledData & 0xFF))
+            {
+                return 1;
+            }
+            if (scaledData == (int16_t)(scaledData & 0xFFFF))
+            {
+                return 2;
+            }
+            if (scaledData == (int32_t)(scaledData & 0xFFFFFF))
+            {
+                return 3;
+            }
+            if (scaledData == (int32_t)(scaledData & 0xFFFFFFFF))
+            {
+                return 4;
+            }
+            return 8;
+        }
+
+        void BTHomeSensor::writeObjectInfo(void)
         {
             static constexpr uint16_t OBJECT_FORMAT_SHIFT = 5;
-            int32_t bytesWritten                          = -1;
+
+            // Get the minimum number of bytes to store the scaled data in
+            uint8_t const dataLen = this->minBytes(this->m_scaledData);
+
+            // Ensure the payload is filled from the start
+            this->m_payloadIdx = 0;
 
             // Plus 1 to account for the data type byte
-            dest[0]      = (static_cast<uint8_t>(objectType) << OBJECT_FORMAT_SHIFT) | (dataLen + 1);
-            bytesWritten = 1;
+            this->m_payload[this->m_payloadIdx] =
+                (static_cast<uint8_t>(this->m_objectType) << OBJECT_FORMAT_SHIFT) | (dataLen + 1);
+            this->m_payloadIdx++;
 
-            dest[1] = static_cast<uint8_t>(dataType);
-            bytesWritten++;
-
-            return bytesWritten;
+            m_payload[this->m_payloadIdx] = static_cast<uint8_t>(this->m_dataType);
+            this->m_payloadIdx++;
         }
 
-        int32_t _write_data_bytes(uint16_t const data, uint8_t dest[], uint8_t destLen)
+        void BTHomeSensor::writeObjectData(void)
         {
-            dest[0] = data & 0xff;
+            // Get the minimum number of bytes to store the scaled data in
+            uint8_t const dataLen = this->minBytes(this->m_scaledData);
 
-            dest[1] = (data >> 8) & 0xff;
-
-            return 2;
+            for (int8_t i = 0; i < dataLen; i++)
+            {
+                this->m_payload[this->m_payloadIdx] = static_cast<uint8_t>((this->m_scaledData >> (i * 8)) & 0xff);
+                this->m_payloadIdx++;
+            }
         }
 
-        int32_t temperature(float const temperature, uint8_t dest[], uint32_t const destLen)
-        {
-            int32_t bytesWritten   = -1;
-            int16_t const temp_val = static_cast<int16_t>(100.0 * temperature);
+        BTHomeUnsignedIntSensor::BTHomeUnsignedIntSensor(enum constants::DATA_TYPE dataType, float const scaleFactor,
+                                                         float const data)
+            : BTHomeSensor(constants::OBJECT_FORMAT::UNSIGNED_INT, dataType, scaleFactor, data) {};
 
-            bytesWritten = _write_object_info(constants::OBJECT_FORMAT::SIGNED_INT, constants::DATA_TYPE::TEMPERATURE,
-                                              2, dest, destLen);
+        BTHomeUnsignedIntSensor::BTHomeUnsignedIntSensor(enum constants::DATA_TYPE dataType, uint64_t const data)
+            : BTHomeSensor(constants::OBJECT_FORMAT::UNSIGNED_INT, dataType, data) {};
 
-            bytesWritten += _write_data_bytes(temp_val, &dest[bytesWritten], destLen - bytesWritten);
+        BTHomeSignedIntSensor::BTHomeSignedIntSensor(enum constants::DATA_TYPE dataType, float const scaleFactor,
+                                                     float const data)
+            : BTHomeSensor(constants::OBJECT_FORMAT::SIGNED_INT, dataType, scaleFactor, data) {};
 
-            return bytesWritten;
-        }
+        BTHomeSignedIntSensor::BTHomeSignedIntSensor(enum constants::DATA_TYPE dataType, uint64_t const data)
+            : BTHomeSensor(constants::OBJECT_FORMAT::SIGNED_INT, dataType, data) {};
 
-        int32_t humidity(float const humidity, uint8_t dest[], uint32_t destLen)
-        {
-            int32_t bytesWritten = -1;
+        BTHomePacketIdIdSensor::BTHomePacketIdIdSensor(uint64_t const data)
+            : BTHomeUnsignedIntSensor(constants::DATA_TYPE::PACKET_ID, data) {};
 
-            uint16_t const scaled_humidity = static_cast<uint16_t>((100.0 * humidity));
+        BTHomeTemperatureSensor::BTHomeTemperatureSensor(float const data)
+            : BTHomeSignedIntSensor(constants::DATA_TYPE::TEMPERATURE, 100.0f, data) {};
 
-            bytesWritten = _write_object_info(constants::OBJECT_FORMAT::UNSIGNED_INT, constants::DATA_TYPE::HUMIDITY, 2,
-                                              dest, destLen);
+        BTHomeHumiditySensor::BTHomeHumiditySensor(float const data)
+            : BTHomeUnsignedIntSensor(constants::DATA_TYPE::HUMIDITY, 100.0f, data) {};
 
-            bytesWritten += _write_data_bytes(scaled_humidity, &dest[bytesWritten], destLen - bytesWritten);
-
-            return bytesWritten;
-        }
-
-        int32_t battery(float const batteryPercent, uint8_t dest[], uint32_t destLen)
-        {
-            int32_t bytesWritten = -1;
-
-            uint16_t const scaled_battery = static_cast<uint16_t>(batteryPercent);
-
-            bytesWritten = _write_object_info(constants::OBJECT_FORMAT::UNSIGNED_INT, constants::DATA_TYPE::BATTERY, 2,
-                                              dest, destLen);
-
-            bytesWritten += _write_data_bytes(scaled_battery, &dest[bytesWritten], destLen - bytesWritten);
-
-            return bytesWritten;
-        }
-
-        int32_t pressure(float const pressure, uint8_t dest[], uint32_t destLen)
-        {
-            int32_t bytesWritten = -1;
-
-            uint32_t const scaled_pressure = static_cast<uint32_t>(100.0 * pressure);
-
-            bytesWritten = _write_object_info(constants::OBJECT_FORMAT::UNSIGNED_INT, constants::DATA_TYPE::PRESSURE, 3,
-                                              dest, destLen);
-
-            dest[bytesWritten] = scaled_pressure & 0xff;
-            bytesWritten++;
-
-            dest[bytesWritten] = (scaled_pressure >> 8) & 0xff;
-            bytesWritten++;
-
-            dest[bytesWritten] = (scaled_pressure >> 16) & 0xff;
-            bytesWritten++;
-
-            return bytesWritten;
-        }
-
-        int32_t packet_id(uint8_t const packetId, uint8_t dest[], uint32_t destLen)
-        {
-            int32_t bytesWritten = -1;
-            bytesWritten = _write_object_info(constants::OBJECT_FORMAT::UNSIGNED_INT, constants::DATA_TYPE::PACKET_ID,
-                                              1, dest, destLen);
-
-            bytesWritten += _write_data_bytes(packetId, &dest[bytesWritten], destLen - bytesWritten);
-
-            return bytesWritten;
-        }
-
+        BTHomePressureSensor::BTHomePressureSensor(float const data)
+            : BTHomeUnsignedIntSensor(constants::DATA_TYPE::PRESSURE, 100.0f, data) {};
     }; // namespace encode
 
 }; // namespace bthome

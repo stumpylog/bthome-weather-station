@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
+#include <cstdint>
 
 namespace bthome
 {
@@ -40,15 +40,68 @@ namespace bthome
     namespace encode
     {
 
-        int32_t temperature(float const temperature, uint8_t dest[], uint32_t destLen);
+        class BTHomeSensor
+        {
+          public:
+            BTHomeSensor(enum constants::OBJECT_FORMAT objectType, enum constants::DATA_TYPE dataType,
+                         float const scaleFactor, float const data);
+            BTHomeSensor(enum constants::OBJECT_FORMAT objectType, enum constants::DATA_TYPE dataType,
+                         uint64_t const data);
+            ~BTHomeSensor(void);
+            uint8_t const* const getPayload(void);
+            uint32_t getPayloadSize(void);
 
-        int32_t humidity(float const humidity, uint8_t dest[], uint32_t destLen);
+          protected:
+            uint8_t minBytes(int64_t scaledData);
+            void writeObjectInfo(void);
+            void writeObjectData(void);
 
-        int32_t battery(float const batteryPercent, uint8_t dest[], uint32_t destLen);
+            enum constants::OBJECT_FORMAT m_objectType;
+            enum constants::DATA_TYPE m_dataType;
+            float m_scale;
+            uint64_t m_scaledData;
+            uint32_t m_payloadIdx;
+            // Nothing is going to be larger than the max advertisement size
+            uint8_t m_payload[32] {0};
+        };
 
-        int32_t pressure(float const pressure, uint8_t dest[], uint32_t destLen);
+        class BTHomeUnsignedIntSensor : public BTHomeSensor
+        {
+          public:
+            BTHomeUnsignedIntSensor(enum constants::DATA_TYPE dataType, uint64_t const data);
+            BTHomeUnsignedIntSensor(enum constants::DATA_TYPE dataType, float const scaleFactor, float const data);
+        };
 
-        int32_t packet_id(uint8_t const packetId, uint8_t dest[], uint32_t destLen);
+        class BTHomeSignedIntSensor : public BTHomeSensor
+        {
+          public:
+            BTHomeSignedIntSensor(enum constants::DATA_TYPE dataType, uint64_t const data);
+            BTHomeSignedIntSensor(enum constants::DATA_TYPE dataType, float const scaleFactor, float const data);
+        };
+
+        class BTHomePacketIdIdSensor : public BTHomeUnsignedIntSensor
+        {
+          public:
+            BTHomePacketIdIdSensor(uint64_t const data);
+        };
+
+        class BTHomeTemperatureSensor : public BTHomeSignedIntSensor
+        {
+          public:
+            BTHomeTemperatureSensor(float const data);
+        };
+
+        class BTHomeHumiditySensor : public BTHomeUnsignedIntSensor
+        {
+          public:
+            BTHomeHumiditySensor(float const data);
+        };
+
+        class BTHomePressureSensor : public BTHomeUnsignedIntSensor
+        {
+          public:
+            BTHomePressureSensor(float const data);
+        };
 
     }; // namespace encode
 

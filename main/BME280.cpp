@@ -222,7 +222,8 @@ namespace sensors
 
         float P = var4 / 256.0;
 
-        return P;
+        // Convert pascals to mbar
+        return P / 100.0;
     }
 
     void BME280::setSleepMode(void)
