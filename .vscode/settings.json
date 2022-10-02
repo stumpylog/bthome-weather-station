@@ -9,5 +9,12 @@
         "target/esp32.cfg"
     ],
     "idf.pythonBinPath": "/home/trenton/.espressif/python_env/idf4.4_py3.10_env/bin/python",
-    "idf.toolsPath": "/home/trenton/.espressif"
+    "idf.toolsPath": "/home/trenton/.espressif",
+    "cmake.configureOnOpen": false,
+    "files.associations": {
+        "*.ipp": "c",
+        "esp_bt_defs.h": "c"
+    },
+    "idf.flashType": "UART",
+    "idf.port": "/dev/ttyUSB0"
 }
