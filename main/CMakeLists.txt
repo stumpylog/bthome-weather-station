@@ -3,4 +3,8 @@ idf_component_register(SRCS "BME280.cpp"
                             "blackboard.cpp"
                             "task_read_sensors.cpp"
                             "task_ble.cpp"
-                            "bthome.cpp" INCLUDE_DIRS ".")
+                            INCLUDE_DIRS ".")
+
+add_subdirectory(bthome)
+
+target_link_libraries(${COMPONENT_LIB} PUBLIC bthome)
