@@ -1,41 +1,67 @@
-# _Sample project_
+- [BTHome Weather Station](#bthome-weather-station)
+  - [Building](#building)
+  - [Contributing](#contributing)
+  - [References](#references)
+  - [Future Work](#future-work)
+    - [Burst Reads/Writes](#burst-readswrites)
+    - [i2c Device Class](#i2c-device-class)
+    - [BLE Advertisement Building](#ble-advertisement-building)
+      - [Improved Building](#improved-building)
+      - [Splitting Packets](#splitting-packets)
+      - [Infrequent Data](#infrequent-data)
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+# BTHome Weather Station
 
-This is the simplest buildable example. The example is used by command `idf.py create-project`
-that copies the project to user specified path and set it's name. For more information follow the [docs page](https://docs.espressif.com/projects/esp-idf/en/latest/api-guides/build-system.html#start-a-new-project)
+This is an ESP-IDF based project which collects some sensor data over i2c, encodes it using the [BTHome](https://bthome.io/) format and sends it over Bluetooth.
+
+It is currently working, with the 3 sensors visible in Home Assistant.
+
+## Building
+
+The project uses the [standard ESP-IDF build system](https://docs.espressif.com/projects/esp-idf/en/v4.4.2/esp32/api-guides/build-system.html).
+I  personally use the VSCode addon to compile and flash to my device
+
+The SDK config targets a somewhat new revision of an ESP32.  I flash specifically on an Unexpected Maker TinyPcio.
+
+## Contributing
+
+Contributions with new sensors, bug fixes, etc are happily accepted.  The project tries to follow the `git flow` naming, so naming branches `feature/` or `bugfix/`
+will help make it clear what its for.
+
+## References
+
+1. [BTHome](https://bthome.io/)
+1. [BME280 Datasheet](https://www.mouser.com/datasheet/2/783/BST-BME280-DS002-1509607.pdf)
+2. [ESP-IDF BLE API Documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/bluetooth/esp_gap_ble.html)
+3. [ESP-IDF I2C API Documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/i2c.html)
+
+## Future Work
+
+### Burst Reads/Writes
+
+The interface to the i2c sensor could be improved.  The BME280 datasheet explicitly recommends doing this.
 
 
+### i2c Device Class
 
-## How to use example
-We encourage the users to use the example as a template for the new projects.
-A recommended way is to follow the instructions on a [docs page](https://docs.espressif.com/projects/esp-idf/en/latest/api-guides/build-system.html#start-a-new-project).
+This would be a class which sensors would take in, which sets up the bus (once) and provides the interface to read and write on it.
 
-## Example folder contents
+This would make it easier to add a new sensor and allow sharing of the hardware i2c resources.
 
-The project **sample_project** contains one source file in C language [main.c](main/main.c). The file is located in folder [main](main).
+### BLE Advertisement Building
 
-ESP-IDF projects are built using CMake. The project build configuration is contained in `CMakeLists.txt`
-files that provide set of directives and instructions describing the project's source files and targets
-(executable, library, or both).
+#### Improved Building
 
-Below is short explanation of remaining files in the project folder.
+A lot of the BLE packet is handcrafted indexing.  This includes the device name, and quite a lot of very explicit indexing into a single
+array of bytes.  That's not great, and I'm sure it could be improved.  Perhaps a packed structure or a management class with
+interfaces to set certain parts of the packet (or not)?
 
-```
-├── CMakeLists.txt
-├── main
-│   ├── CMakeLists.txt
-│   └── main.c
-└── README.md                  This is the file you are currently reading
-```
-Additionally, the sample project contains Makefile and component.mk files, used for the legacy Make based build system.
-They are not used or needed when building with CMake and idf.py.
+#### Splitting Packets
 
-### Working packet
-02 01 06
-0B 09 6D 79 42 54 48 6F 6D 65 5F 31
-0B 16 1C 18 23 02 C4 09 03 09 0B 00
+Currently, all the data read fits into a single BLE advertisement packet (31 bytes of data).  As an improvement, some sort of interface should
+exist to break the data across multiple packets if necessary.  This might place information like the device name into one advertisement and
+the actual readings into a second.
 
-02 01 06
-05 09 74 65 73 74
-00 16 1C 18 02 00 02 00 43 02 00 00 03 03 00 00 03 04 00 00
+#### Infrequent Data
+
+Along with this, it could be useful to only send some advertisements infrequently.  I doubt the device name needs to be sent every minute, for example.
