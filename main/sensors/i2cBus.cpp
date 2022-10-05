@@ -50,10 +50,9 @@ void i2cBus::burstWrite(uint8_t const address, uint8_t const reg, uint8_t const 
 
 void i2cBus::write8(uint8_t const address, uint8_t const reg, uint8_t value) const
 {
-    uint8_t buffer[2];
-    buffer[0] = static_cast<uint8_t>(reg);
-    buffer[1] = value;
-    this->burstWrite(address, reg, &buffer[0], 2);
+    uint8_t buffer[1];
+    buffer[0] = value;
+    this->burstWrite(address, reg, &buffer[0], 1);
 }
 
 void i2cBus::burstRead(uint8_t const address, uint8_t const reg, uint8_t const length, uint8_t dest[]) const

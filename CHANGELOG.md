@@ -1,11 +1,17 @@
 
 - [Changelog](#changelog)
-  - [vNext](#vnext)
+  - [0.2.1](#021)
+  - [0.2.0](#020)
   - [0.0.1](#001)
 
 # Changelog
 
-## vNext
+## 0.2.1
+
+- Fixes an issue with the `i2cBus::write8` method which caused the BME280 to remain in reset
+- Fixes the changelog not having been set to the new version
+
+## 0.2.0
 
 - Implements the class `i2cBus` which wraps the ESP-IDF commands and can be shared with sensors on the same bus
 - Implements burst read and write functionality, for reading blocks of data in the same I2C transaction
