@@ -18,7 +18,6 @@ class i2cBus
     void init(void);
 
     void write8(uint8_t const address, uint8_t const reg, uint8_t value) const;
-    void write16(uint8_t const address, uint8_t const reg, uint16_t value) const;
     void burstWrite(uint8_t const address, uint8_t const reg, uint8_t const data[], uint8_t const length) const;
 
     uint8_t read8(uint8_t const address, uint8_t const reg) const;
