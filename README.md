@@ -3,8 +3,6 @@
   - [Contributing](#contributing)
   - [References](#references)
   - [Future Work](#future-work)
-    - [Burst Reads/Writes](#burst-readswrites)
-    - [i2c Device Class](#i2c-device-class)
     - [BLE Advertisement Building](#ble-advertisement-building)
       - [Improved Building](#improved-building)
       - [Splitting Packets](#splitting-packets)
@@ -36,17 +34,6 @@ will help make it clear what its for.
 3. [ESP-IDF I2C API Documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/i2c.html)
 
 ## Future Work
-
-### Burst Reads/Writes
-
-The interface to the i2c sensor could be improved.  The BME280 datasheet explicitly recommends doing this.
-
-
-### i2c Device Class
-
-This would be a class which sensors would take in, which sets up the bus (once) and provides the interface to read and write on it.
-
-This would make it easier to add a new sensor and allow sharing of the hardware i2c resources.
 
 ### BLE Advertisement Building
 

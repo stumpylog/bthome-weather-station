@@ -7,24 +7,32 @@ extern "C" {
 #endif
 
 #include "driver/i2c.h"
+#include "i2cBus.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 namespace sensors
 {
     class BME280
     {
       public:
-        BME280(i2c_port_t i2cDriver);
+        BME280(i2cBus const& bus);
         ~BME280(void);
 
-        float readTemperature(void);
-        float readPressure(void);
-        float readHumidity(void);
+        void readData(void);
 
         void setSleepMode(void);
 
+        float temperature;
+        float pressure;
+        float humidity;
+
       private:
+        void readCalibration(void);
+        float calculateTemperature(uint32_t adc_T);
+        float calculatePressure(uint32_t adc_P);
+        float calculateHumidity(uint32_t adc_H);
+
         typedef struct BME280CalibrationData
         {
             uint16_t dig_T1; ///< temperature compensation value
@@ -229,17 +237,9 @@ namespace sensors
         };
         ctrl_hum _humReg; //!< hum register object
 
-        void write8(REGISTER reg, uint8_t value);
-        uint8_t read8(REGISTER reg);
-        uint16_t read16(REGISTER reg);
-        uint32_t read24(REGISTER reg);
-        int16_t readS16(REGISTER reg);
-        uint16_t read16_LE(REGISTER reg); // little endian
-        int16_t readS16_LE(REGISTER reg); // little endian
-
         static constexpr uint8_t BME280_ADDRESS {0x77};
 
-        i2c_port_t _i2cDriver;
+        i2cBus const& m_bus;
         BME280CalibrationData _calibrationData;
         int32_t t_fine;
     };
