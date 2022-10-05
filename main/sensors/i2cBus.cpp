@@ -12,18 +12,6 @@ extern "C" {
 
 #define NAME "i2cBus"
 
-union HandyUnionSize8
-{
-    uint8_t value;
-    uint8_t array[1];
-};
-
-union HandyUnionSize16
-{
-    uint16_t value;
-    uint8_t array[2];
-};
-
 i2cBus::i2cBus(i2c_port_t const port, gpio_num_t const scl_io_num, gpio_num_t const sda_io_num)
     : m_port(port), m_scl(scl_io_num), m_sda(sda_io_num)
 { }
@@ -62,16 +50,10 @@ void i2cBus::burstWrite(uint8_t const address, uint8_t const reg, uint8_t const 
 
 void i2cBus::write8(uint8_t const address, uint8_t const reg, uint8_t value) const
 {
-    union HandyUnionSize8 temp;
-    temp.value = value;
-    this->burstWrite(address, reg, &temp.array[0], 1);
-}
-
-void i2cBus::write16(uint8_t const address, uint8_t const reg, uint16_t value) const
-{
-    union HandyUnionSize16 temp;
-    temp.value = value;
-    this->burstWrite(address, reg, &temp.array[0], 2);
+    uint8_t buffer[2];
+    buffer[0] = static_cast<uint8_t>(reg);
+    buffer[1] = value;
+    this->burstWrite(address, reg, &buffer[0], 2);
 }
 
 void i2cBus::burstRead(uint8_t const address, uint8_t const reg, uint8_t const length, uint8_t dest[]) const
@@ -82,21 +64,21 @@ void i2cBus::burstRead(uint8_t const address, uint8_t const reg, uint8_t const l
                                                  // Write
                                                  &buffer[0], 1,
                                                  // Read
-                                                 &dest[0], length, 20 / portTICK_PERIOD_MS));
+                                                 &dest[0], length, 10 / portTICK_PERIOD_MS));
 }
 
 uint8_t i2cBus::read8(uint8_t const address, uint8_t const reg) const
 {
-    union HandyUnionSize8 temp;
-    this->burstRead(address, reg, 1, &temp.array[0]);
-    return temp.value;
+    uint8_t buffer[1];
+    this->burstRead(address, reg, 1, &buffer[0]);
+    return buffer[0];
 }
 
 uint16_t i2cBus::read16(uint8_t const address, uint8_t const reg) const
 {
-    union HandyUnionSize16 temp;
-    this->burstRead(address, reg, 2, &temp.array[0]);
-    return temp.value;
+    uint8_t buffer[2];
+    this->burstRead(address, reg, 2, &buffer[0]);
+    return uint16_t(buffer[0]) << 8 | uint16_t(buffer[1]);
 }
 
 int16_t i2cBus::readS16(uint8_t const address, uint8_t const reg) const
@@ -107,7 +89,7 @@ int16_t i2cBus::readS16(uint8_t const address, uint8_t const reg) const
 uint32_t i2cBus::read24(uint8_t const address, uint8_t const reg) const
 {
     uint8_t buffer[3];
-    buffer[0] = static_cast<uint8_t>(reg);
+    buffer[0] = reg;
     ESP_ERROR_CHECK(i2c_master_write_read_device(this->m_port, address,
                                                  // Write
                                                  &buffer[0], 1,

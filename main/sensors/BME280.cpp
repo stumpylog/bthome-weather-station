@@ -103,7 +103,7 @@ namespace sensors
         this->humidity    = this->calculateHumidity(rawHumidity);
     }
 
-    float BME280::calculateTemperature(uint32_t adc_T)
+    float BME280::calculateTemperature(int32_t adc_T)
     {
         int32_t var1, var2;
 
@@ -126,7 +126,7 @@ namespace sensors
         return (float)T / 100;
     }
 
-    float BME280::calculateHumidity(uint32_t adc_H)
+    float BME280::calculateHumidity(int32_t adc_H)
     {
         int32_t var1, var2, var3, var4, var5;
 
@@ -154,7 +154,7 @@ namespace sensors
         return (float)H / 1024.0;
     }
 
-    float BME280::calculatePressure(uint32_t adc_P)
+    float BME280::calculatePressure(int32_t adc_P)
     {
         int64_t var1, var2, var3, var4;
 

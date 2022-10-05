@@ -29,9 +29,9 @@ namespace sensors
 
       private:
         void readCalibration(void);
-        float calculateTemperature(uint32_t adc_T);
-        float calculatePressure(uint32_t adc_P);
-        float calculateHumidity(uint32_t adc_H);
+        float calculateTemperature(int32_t);
+        float calculatePressure(int32_t);
+        float calculateHumidity(int32_t);
 
         typedef struct BME280CalibrationData
         {
