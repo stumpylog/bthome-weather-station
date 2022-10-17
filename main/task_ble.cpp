@@ -60,6 +60,7 @@ void ble_deinit(void)
     ESP_ERROR_CHECK(esp_bluedroid_disable());
     ESP_ERROR_CHECK(esp_bluedroid_deinit());
     ESP_ERROR_CHECK(esp_bt_controller_disable());
+    ESP_ERROR_CHECK(esp_bt_controller_deinit());
 }
 
 uint8_t build_data_advert(uint8_t data[])
