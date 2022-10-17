@@ -25,8 +25,10 @@ static constexpr uint64_t SLEEP_1_MINUTE {SECONDS_PER_MINUTE * US_TO_S_FACTOR};
 static constexpr uint64_t SLEEP_5_MINUTES {SLEEP_1_MINUTE * 5};
 
 static esp_ble_adv_params_t ble_adv_params = {
-    .adv_int_min       = 0x20,
-    .adv_int_max       = 0x40,
+    // 0.625ms * 0x40 ~ 40ms
+    .adv_int_min = 0x40,
+    // 0.625ms * 0x140 ~ 200ms
+    .adv_int_max       = 0x140,
     .adv_type          = ADV_TYPE_NONCONN_IND,
     .own_addr_type     = BLE_ADDR_TYPE_PUBLIC,
     .peer_addr_type    = BLE_ADDR_TYPE_PUBLIC,
@@ -58,6 +60,7 @@ void ble_deinit(void)
     ESP_ERROR_CHECK(esp_bluedroid_disable());
     ESP_ERROR_CHECK(esp_bluedroid_deinit());
     ESP_ERROR_CHECK(esp_bt_controller_disable());
+    ESP_ERROR_CHECK(esp_bt_controller_deinit());
 }
 
 uint8_t build_data_advert(uint8_t data[])
@@ -160,7 +163,7 @@ void task_ble_entry(void* params)
             ESP_ERROR_CHECK(esp_ble_gap_start_advertising(&ble_adv_params));
 
             // Wait 500ms for a few advertisement to go out
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
 
             // Stop advertising data
             ESP_ERROR_CHECK(esp_ble_gap_stop_advertising());
@@ -170,7 +173,7 @@ void task_ble_entry(void* params)
 
             // Enter deep sleep
             ESP_LOGI(BLE_TASK_NAME, "Goodbye!");
-            esp_deep_sleep(SLEEP_1_MINUTE);
+            esp_deep_sleep(SLEEP_5_MINUTES);
         }
         else
         {
