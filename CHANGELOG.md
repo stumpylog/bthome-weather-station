@@ -1,13 +1,13 @@
 
 - [Changelog](#changelog)
-  - [vNext](#vnext)
+  - [0.2.2](#022)
   - [0.2.1](#021)
   - [0.2.0](#020)
   - [0.0.1](#001)
 
 # Changelog
 
-## vNext
+## 0.2.2
 
 - With the release of Home Assistant 2022.10, bump the sleep time to 5 minutes, which should fix becoming unavailable so quickly.
 - Increase advertising interval to 160ms
