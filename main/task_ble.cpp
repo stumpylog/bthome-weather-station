@@ -1,8 +1,7 @@
 
 
+#include "advertisement.h"
 #include "blackboard.h"
-#include "bthome/advertisement.h"
-#include "bthome/sensor.h"
 #include "esp_bt.h"
 #include "esp_bt_defs.h"
 #include "esp_bt_main.h"
@@ -13,6 +12,7 @@
 #include "esp_sleep.h"
 #include "freertos/task.h"
 #include "nvs_flash.h"
+#include "sensor.h"
 #include "tasks.h"
 
 #include <cstdint>

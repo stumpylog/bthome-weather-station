@@ -14,6 +14,7 @@
 - Further tweaks to the advertising interval, in an attempt to work more reliably with ESPHome's proxy
 - Some initial work for encryption support
 - Internal cleanup for C style linkage
+- More correctly follow the ESP-IDF build system for components
 
 ## 0.2.2
 
