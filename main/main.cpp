@@ -26,7 +26,7 @@ void app_main(void)
 
     xTaskCreatePinnedToCore(&task_ble_entry,                  // task
                             BLE_TASK_NAME,                    // task name
-                            4096,                             // stack size
+                            2048,                             // stack size
                             NULL,                             // parameters
                             5,                                // priority
                             &blackboard.system.bleTaskHandle, // returned task handle

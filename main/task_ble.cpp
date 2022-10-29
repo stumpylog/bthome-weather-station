@@ -67,7 +67,6 @@ void ble_deinit(void)
 
 uint8_t build_data_advert(uint8_t data[])
 {
-    bthome::sensor::PacketIdIdSensor packet(static_cast<uint64_t>(packetId));
     bthome::sensor::TemperatureSensor temp(blackboard.sensors.temperature);
     bthome::sensor::HumiditySensor humid(blackboard.sensors.humidity);
     bthome::sensor::PressureSensor press(blackboard.sensors.pressure);
