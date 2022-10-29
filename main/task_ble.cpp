@@ -27,10 +27,8 @@ static constexpr uint64_t SLEEP_5_MINUTES {SLEEP_1_MINUTE * 5};
 static RTC_DATA_ATTR uint8_t packetId {0};
 
 static esp_ble_adv_params_t ble_adv_params = {
-    // 1s
-    .adv_int_min = 0x640,
-    // 0.625ms * 0x0800 ~ 1280ms
-    .adv_int_max       = 0x0800,
+    .adv_int_min       = 0x40,
+    .adv_int_max       = 0x140,
     .adv_type          = ADV_TYPE_NONCONN_IND,
     .own_addr_type     = BLE_ADDR_TYPE_PUBLIC,
     .peer_addr_type    = BLE_ADDR_TYPE_PUBLIC,
