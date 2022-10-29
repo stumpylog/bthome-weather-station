@@ -1,5 +1,5 @@
 add_library(bthome STATIC
-            "bthome.cpp")
+            "sensor.cpp" "advertisement.cpp")
 
 target_include_directories(bthome PUBLIC ".")
 

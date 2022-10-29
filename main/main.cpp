@@ -1,12 +1,20 @@
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 #include "blackboard.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "tasks.h"
+
+// app_main must link to C code
+#ifdef __cplusplus
+extern "C" {
+#endif
+void app_main(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 void app_main(void)
 {
@@ -18,7 +26,7 @@ void app_main(void)
 
     xTaskCreatePinnedToCore(&task_ble_entry,                  // task
                             BLE_TASK_NAME,                    // task name
-                            2048,                             // stack size
+                            4096,                             // stack size
                             NULL,                             // parameters
                             5,                                // priority
                             &blackboard.system.bleTaskHandle, // returned task handle
@@ -34,7 +42,3 @@ void app_main(void)
                             1                                    // pinned core
     );
 }
-
-#ifdef __cplusplus
-}
-#endif

@@ -3,10 +3,8 @@
   - [Contributing](#contributing)
   - [References](#references)
   - [Future Work](#future-work)
-    - [BLE Advertisement Building](#ble-advertisement-building)
-      - [Improved Building](#improved-building)
-      - [Splitting Packets](#splitting-packets)
-      - [Infrequent Data](#infrequent-data)
+    - [Encryption](#encryption)
+    - [Infrequent Data](#infrequent-data)
 
 # BTHome Weather Station
 
@@ -29,26 +27,20 @@ will help make it clear what its for.
 ## References
 
 1. [BTHome](https://bthome.io/)
-1. [BME280 Datasheet](https://www.mouser.com/datasheet/2/783/BST-BME280-DS002-1509607.pdf)
-2. [ESP-IDF BLE API Documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/bluetooth/esp_gap_ble.html)
-3. [ESP-IDF I2C API Documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/i2c.html)
+2. [BME280 Datasheet](https://www.mouser.com/datasheet/2/783/BST-BME280-DS002-1509607.pdf)
+3. [ESP-IDF BLE API Documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/bluetooth/esp_gap_ble.html)
+4. [ESP-IDF I2C API Documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/i2c.html)
 
 ## Future Work
 
-### BLE Advertisement Building
+### Encryption
 
-#### Improved Building
+The BTHome format allows for encryption with a pre shared key, using AES-CCM.  The documenting is pretty scarce, with basically only an example Python
+script as an example.  For the ESP-IDF, encryption would be handled by the mbed-tls library.  This would require reverse engineering the Python and
+replicating it to that library.
 
-A lot of the BLE packet is handcrafted indexing.  This includes the device name, and quite a lot of very explicit indexing into a single
-array of bytes.  That's not great, and I'm sure it could be improved.  Perhaps a packed structure or a management class with
-interfaces to set certain parts of the packet (or not)?
 
-#### Splitting Packets
+### Infrequent Data
 
-Currently, all the data read fits into a single BLE advertisement packet (31 bytes of data).  As an improvement, some sort of interface should
-exist to break the data across multiple packets if necessary.  This might place information like the device name into one advertisement and
-the actual readings into a second.
-
-#### Infrequent Data
-
-Along with this, it could be useful to only send some advertisements infrequently.  I doubt the device name needs to be sent every minute, for example.
+Along with this, it could be useful to only send some advertisements infrequently.  I doubt the device name needs to be sent every minute, for example.  I'm
+unsure how Home Assistant would treat this though, it may mark the sensor as unavailable.

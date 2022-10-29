@@ -1,11 +1,19 @@
 
 - [Changelog](#changelog)
+  - [vNext](#vnext)
   - [0.2.2](#022)
   - [0.2.1](#021)
   - [0.2.0](#020)
   - [0.0.1](#001)
 
 # Changelog
+
+## vNext
+
+- Advertisements are now built via class and are less handcrafted
+- Further tweaks to the advertising interval, in an attempt to work more reliably with ESPHome's proxy
+- Some initial work for encryption support
+- Internal cleanup for C style linkage
 
 ## 0.2.2
 

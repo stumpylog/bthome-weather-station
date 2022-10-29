@@ -1,9 +1,8 @@
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 #include "blackboard.h"
-#include "bthome.h"
+#include "bthome/advertisement.h"
+#include "bthome/sensor.h"
 #include "esp_bt.h"
 #include "esp_bt_defs.h"
 #include "esp_bt_main.h"
@@ -16,19 +15,22 @@ extern "C" {
 #include "nvs_flash.h"
 #include "tasks.h"
 
+#include <cstdint>
 #include <cstring>
-#include <stdint.h>
 
 static constexpr uint32_t US_TO_S_FACTOR {1000000};
 static constexpr uint32_t SECONDS_PER_MINUTE {60};
 static constexpr uint64_t SLEEP_1_MINUTE {SECONDS_PER_MINUTE * US_TO_S_FACTOR};
 static constexpr uint64_t SLEEP_5_MINUTES {SLEEP_1_MINUTE * 5};
 
+// Store the packet ID and persist it across sleep
+static RTC_DATA_ATTR uint8_t packetId {0};
+
 static esp_ble_adv_params_t ble_adv_params = {
-    // 0.625ms * 0x40 ~ 40ms
-    .adv_int_min = 0x40,
-    // 0.625ms * 0x140 ~ 200ms
-    .adv_int_max       = 0x140,
+    // 1s
+    .adv_int_min = 0x640,
+    // 0.625ms * 0x0800 ~ 1280ms
+    .adv_int_max       = 0x0800,
     .adv_type          = ADV_TYPE_NONCONN_IND,
     .own_addr_type     = BLE_ADDR_TYPE_PUBLIC,
     .peer_addr_type    = BLE_ADDR_TYPE_PUBLIC,
@@ -65,71 +67,19 @@ void ble_deinit(void)
 
 uint8_t build_data_advert(uint8_t data[])
 {
-    uint8_t bytes = 0;
+    bthome::sensor::PacketIdIdSensor packet(static_cast<uint64_t>(packetId));
+    bthome::sensor::TemperatureSensor temp(blackboard.sensors.temperature);
+    bthome::sensor::HumiditySensor humid(blackboard.sensors.humidity);
+    bthome::sensor::PressureSensor press(blackboard.sensors.pressure);
 
-    // Flags
-    data[0] = 2;
-    bytes++;
+    bthome::Advertisement advertisement(std::string("outside"));
+    advertisement.addSensor(temp);
+    advertisement.addSensor(humid);
+    advertisement.addSensor(press);
 
-    data[1] = ESP_BLE_AD_TYPE_FLAG;
-    bytes++;
+    memcpy(&data[0], advertisement.getPayload(), advertisement.getPayloadSize());
 
-    data[2] = ESP_BLE_ADV_FLAG_BREDR_NOT_SPT | ESP_BLE_ADV_FLAG_GEN_DISC;
-    bytes++;
-
-    // Name
-    data[3] = 5;
-    bytes++;
-
-    data[4] = ESP_BLE_AD_TYPE_NAME_CMPL;
-    bytes++;
-
-    data[5] = static_cast<uint8_t>('o');
-    bytes++;
-    data[6] = static_cast<uint8_t>('u');
-    bytes++;
-    data[7] = static_cast<uint8_t>('t');
-    bytes++;
-    data[8] = static_cast<uint8_t>('s');
-    bytes++;
-
-    // Service data + UUID length
-    data[9] = 3;
-    bytes++;
-
-    data[10] = ESP_BLE_AD_TYPE_SERVICE_DATA;
-    bytes++;
-
-    data[11] = 0x1c;
-    bytes++;
-    data[12] = 0x18;
-    bytes++;
-
-    bthome::encode::BTHomePacketIdIdSensor packet(static_cast<uint64_t>(blackboard.system.bootCount));
-    bthome::encode::BTHomeTemperatureSensor temp(blackboard.sensors.temperature);
-    bthome::encode::BTHomeHumiditySensor humid(blackboard.sensors.humidity);
-    bthome::encode::BTHomePressureSensor press(blackboard.sensors.pressure);
-
-    memcpy(&data[bytes], packet.getPayload(), packet.getPayloadSize());
-
-    bytes += packet.getPayloadSize();
-
-    memcpy(&data[bytes], temp.getPayload(), temp.getPayloadSize());
-
-    bytes += temp.getPayloadSize();
-
-    memcpy(&data[bytes], humid.getPayload(), humid.getPayloadSize());
-
-    bytes += humid.getPayloadSize();
-
-    memcpy(&data[bytes], press.getPayload(), press.getPayloadSize());
-
-    bytes += press.getPayloadSize();
-
-    // Update length
-    data[9] += packet.getPayloadSize() + temp.getPayloadSize() + humid.getPayloadSize() + press.getPayloadSize();
-
-    return bytes;
+    return advertisement.getPayloadSize();
 }
 
 void task_ble_entry(void* params)
@@ -142,14 +92,11 @@ void task_ble_entry(void* params)
 
     for (;;)
     {
-        // Wait for sensor task notify
-        // Clear all bits on exit to reset
-        if (pdTRUE == xTaskNotifyWait(0, 0xFFFFFFFF, NULL, 1000 / portTICK_PERIOD_MS))
+        // Wait for sensor task notify it has read data
+        if (pdTRUE == ulTaskNotifyTake(pdTRUE, 1000 / portTICK_PERIOD_MS))
         {
 
             ESP_LOGI(BLE_TASK_NAME, "Sensor data ready");
-
-            ESP_LOGI(BLE_TASK_NAME, "Packet #%d", blackboard.system.bootCount);
 
             // Encode sensor data
             uint8_t const dataLength = build_data_advert(&advertData[0]);
@@ -162,8 +109,10 @@ void task_ble_entry(void* params)
             // Begin advertising
             ESP_ERROR_CHECK(esp_ble_gap_start_advertising(&ble_adv_params));
 
-            // Wait 500ms for a few advertisement to go out
-            vTaskDelay(500 / portTICK_PERIOD_MS);
+            // Wait 1500ms for a few advertisement to go out
+            // The minimum time is 1s, the maximum time is 1.28s, so waiting
+            // 320ms beyond that
+            vTaskDelay(1500 / portTICK_PERIOD_MS);
 
             // Stop advertising data
             ESP_ERROR_CHECK(esp_ble_gap_stop_advertising());
@@ -177,11 +126,8 @@ void task_ble_entry(void* params)
         }
         else
         {
+            ESP_LOGW(BLE_TASK_NAME, "Timed out waiting for sensor data");
             // Handle the timeout somehow
         }
     }
 }
-
-#ifdef __cplusplus
-}
-#endif

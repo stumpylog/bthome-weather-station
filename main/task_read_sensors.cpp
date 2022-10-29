@@ -1,8 +1,4 @@
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "BME280.h"
 #include "blackboard.h"
 #include "driver/gpio.h"
@@ -65,7 +61,3 @@ void task_read_sensors_entry(void* params)
     for (;;)
     { }
 }
-
-#ifdef __cplusplus
-}
-#endif
