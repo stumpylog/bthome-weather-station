@@ -3,7 +3,7 @@
 
 #include "esp_log.h"
 // TODO This header isn't found?
-// #include "mbedtls/ccm.h"
+#include "mbedtls/ccm.h"
 #include "sensor.h"
 
 #include <string.h>
@@ -126,8 +126,8 @@ namespace bthome
         this->addSensor(packetIdData);
     }
 
-    /*EncryptedAdvertisement::EncryptedAdvertisement(uint32_t const countId, uint8_t const bindKey[])
-        : Advertisement(), m_serviceUuid(constants::ENCRYPTED_SERVICE_UUID)
+    EncryptedAdvertisement::EncryptedAdvertisement(uint32_t const countId, uint8_t const bindKey[])
+        : Advertisement(), Advertisement::m_serviceUuid(constants::ENCRYPTED_SERVICE_UUID)
     {
         this->buildNonce(countId);
         memcpy(&this->bindKey[0], bindKey, constants::BIND_KEY_LEN);
@@ -209,6 +209,6 @@ namespace bthome
         // TODO: Obviously need some combination of encryptedData and encryptionTag at least now
         // to be copied into the data instead
         return &this->m_data[0];
-    }*/
+    }
 
 }; // namespace bthome

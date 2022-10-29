@@ -23,7 +23,7 @@ namespace bthome
         const uint8_t* getPayload(void) const;
         uint32_t getPayloadSize(void) const;
 
-      private:
+      protected:
         void writeHeader(void);
         void writeUuid(void);
         void writeByte(uint8_t const data);
@@ -47,19 +47,22 @@ namespace bthome
         AdvertisementWithId(std::string const& name, uint8_t const packetId);
     };
 
-    /*class EncryptedAdvertisement : public Advertisement
+    class EncryptedAdvertisement : public Advertisement
     {
       public:
         EncryptedAdvertisement(uint32_t const countId, uint8_t const bindKey[]);
         EncryptedAdvertisement(std::string const& name, uint32_t const countId, uint8_t const bindKey[]);
 
+        const uint8_t* getPayload(void) const;
+        uint32_t getPayloadSize(void) const;
+
       private:
-        void buildNonce(void);
+        void buildNonce(uint32_t const countid);
         void encryptData(void);
 
         uint8_t nonce[constants::NONCE_LEN];
         uint8_t bindKey[constants::BIND_KEY_LEN];
-    };*/
+    };
 
 }; // namespace bthome
 
