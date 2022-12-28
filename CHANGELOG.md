@@ -14,6 +14,7 @@
 - Some initial work for encryption support
 - Internal cleanup for C style linkage
 - More correctly follow the ESP-IDF build system for components
+- Drops support for BTHome v1 format (requires Home Assistant 2022.12 or newer)
 
 ## 0.2.2
 

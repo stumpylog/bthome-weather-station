@@ -1,27 +1,34 @@
 
-#include "advertisement.h"
-
 #include "esp_log.h"
 // TODO This header isn't found?
 // #include "mbedtls/ccm.h"
-#include "sensor.h"
+#include "advertisement.h"
 
 #include <string.h>
+
+#define _ADVERT_LOG_NAME "advert"
 
 namespace bthome
 {
 
     Advertisement::Advertisement(void)
-        : m_dataIdx(0), m_serviceDataSizeIdx(0), m_serviceUuid(constants::UNENCRYPTED_SERVICE_UUID)
+        : m_dataIdx(0), m_serviceDataSizeIdx(0), m_dataStartIdx(0), m_serviceUuid(constants::SERVICE_UUID)
     {
         // Write the common header information
         this->writeHeader();
+
         // Write the service UUID and setup the size index for the data
         this->writeUuid();
+
+        // Write BTHome device into
+        this->writeDeviceInfo();
+
+        // Actual data goes here
+        this->m_dataStartIdx = this->m_dataIdx;
     }
 
     Advertisement::Advertisement(std::string const& name)
-        : m_dataIdx(0), m_serviceDataSizeIdx(0), m_serviceUuid(constants::UNENCRYPTED_SERVICE_UUID)
+        : m_dataIdx(0), m_serviceDataSizeIdx(0), m_dataStartIdx(0), m_serviceUuid(constants::SERVICE_UUID)
     {
         // Write the BLE flags
         this->writeHeader();
@@ -46,9 +53,20 @@ namespace bthome
 
         // Follow up the name with the service data UUID (but no data yet)
         this->writeUuid();
+
+        // Write BTHome device into
+        this->writeDeviceInfo();
+
+        // Actual data goes here
+        this->m_dataStartIdx = this->m_dataIdx;
     }
 
     Advertisement::~Advertisement(void) { }
+
+    void Advertisement::reset(void)
+    {
+        this->m_dataIdx = 0;
+    }
 
     void Advertisement::writeHeader(void)
     {
@@ -73,6 +91,14 @@ namespace bthome
         this->writeByte((this->m_serviceUuid >> 8) & 0xff);
     }
 
+    void Advertisement::writeDeviceInfo(void)
+    {
+        this->writeByte((0 << constants::BTHOME_DEVICE_INFO_SHIFTS::ENCRYPTED) |
+                        (constants::BTHOME_V2 << constants::BTHOME_DEVICE_INFO_SHIFTS::VERSION));
+
+        this->m_data[this->m_serviceDataSizeIdx] += 1;
+    }
+
     inline void Advertisement::writeByte(uint8_t const data)
     {
         if (this->m_dataIdx <= constants::BLE_ADVERT_MAX_LEN)
@@ -82,24 +108,26 @@ namespace bthome
         }
         else
         {
-            ESP_LOGE("advert", "Discarding data");
+            ESP_LOGE(_ADVERT_LOG_NAME, "Discarding data");
         }
     }
 
-    bool Advertisement::addSensor(sensor::Sensor const& sensor)
+    bool Advertisement::addMeasurement(Measurement const& measurement)
     {
 
-        if ((this->m_dataIdx + sensor.getPayloadSize()) > constants::BLE_ADVERT_MAX_LEN)
+        if ((this->m_dataIdx + measurement.getPayloadSize()) > constants::BLE_ADVERT_MAX_LEN)
         {
-            ESP_LOGE("advert", "Unable to add sensor");
+            ESP_LOGE(_ADVERT_LOG_NAME, "Unable to add sensor");
             return false;
         }
 
-        memcpy(&this->m_data[this->m_dataIdx], sensor.getPayload(), sensor.getPayloadSize());
+        memcpy(&this->m_data[this->m_dataIdx], measurement.getPayload(), measurement.getPayloadSize());
 
-        this->m_dataIdx += sensor.getPayloadSize();
+        // Increment where the next measurement will go
+        this->m_dataIdx += measurement.getPayloadSize();
 
-        this->m_data[this->m_serviceDataSizeIdx] += sensor.getPayloadSize();
+        // Also increase the length in the header
+        this->m_data[this->m_serviceDataSizeIdx] += measurement.getPayloadSize();
 
         return true;
     }
@@ -116,14 +144,14 @@ namespace bthome
 
     AdvertisementWithId::AdvertisementWithId(uint8_t const packetId) : Advertisement()
     {
-        sensor::PacketIdIdSensor packetIdData(static_cast<uint64_t>(packetId));
-        this->addSensor(packetIdData);
+        Measurement packetIdData(constants::ObjectId::PACKET_ID, static_cast<uint64_t>(packetId));
+        this->addMeasurement(packetIdData);
     }
 
     AdvertisementWithId::AdvertisementWithId(std::string const& name, uint8_t const packetId) : Advertisement(name)
     {
-        sensor::PacketIdIdSensor packetIdData(static_cast<uint64_t>(packetId));
-        this->addSensor(packetIdData);
+        Measurement packetIdData(constants::ObjectId::PACKET_ID, static_cast<uint64_t>(packetId));
+        this->addMeasurement(packetIdData);
     }
 
     /*EncryptedAdvertisement::EncryptedAdvertisement(uint32_t const countId, uint8_t const bindKey[])

@@ -11,8 +11,8 @@
 #include "esp_log.h"
 #include "esp_sleep.h"
 #include "freertos/task.h"
+#include "measurement.h"
 #include "nvs_flash.h"
-#include "sensor.h"
 #include "tasks.h"
 
 #include <cstdint>
@@ -25,6 +25,8 @@ static constexpr uint64_t SLEEP_5_MINUTES {SLEEP_1_MINUTE * 5};
 
 // Store the packet ID and persist it across sleep
 static RTC_DATA_ATTR uint8_t packetId {0};
+
+static bthome::Advertisement advertisement(std::string("outside"));
 
 static esp_ble_adv_params_t ble_adv_params = {
     .adv_int_min       = 0x40,
@@ -65,14 +67,13 @@ void ble_deinit(void)
 
 uint8_t build_data_advert(uint8_t data[])
 {
-    bthome::sensor::TemperatureSensor temp(blackboard.sensors.temperature);
-    bthome::sensor::HumiditySensor humid(blackboard.sensors.humidity);
-    bthome::sensor::PressureSensor press(blackboard.sensors.pressure);
+    bthome::Measurement temp(bthome::constants::ObjectId::TEMPERATURE_PRECISE, blackboard.sensors.temperature);
+    bthome::Measurement humid(bthome::constants::ObjectId::HUMIDITY_PRECISE, blackboard.sensors.humidity);
+    bthome::Measurement press(bthome::constants::ObjectId::PRESSURE, blackboard.sensors.pressure);
 
-    bthome::Advertisement advertisement(std::string("outside"));
-    advertisement.addSensor(temp);
-    advertisement.addSensor(humid);
-    advertisement.addSensor(press);
+    advertisement.addMeasurement(temp);
+    advertisement.addMeasurement(humid);
+    advertisement.addMeasurement(press);
 
     memcpy(&data[0], advertisement.getPayload(), advertisement.getPayloadSize());
 
