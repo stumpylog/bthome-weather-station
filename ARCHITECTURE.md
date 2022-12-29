@@ -20,8 +20,14 @@ The sensor task configures the i2c bus, configures the sensor, gets a sensor rea
 
 ## BTHome Classes
 
-The BTHome packet format is primarily managed by the single base class `BTHomeSensor`.  This class stores the scaled data, object type and data type and constructs it all into a minimal packet when requested.  Child classes abstract away the data type and object format so a user should only need to select the correct class and provide it with data, then get the payload.
+The BTHome packet format is primarily managed by the single base class `Sensor`.  This class stores the scaled data, object type and data type and constructs it all into a minimal packet when requested.  Child classes abstract away the data type and object format so a user should only need to select the correct class and provide it with data, then get the payload.
 
-For example, the `BTHomeTemperatureSensor` has a single constructor which takes the floating point temperature (assumed to be celsius).  it then calls into its parent `BTHomeSignedIntSensor`, providing the data, but also that the data is a temperature reading, scaled by 100.0.  `BTHomeUnsignedIntSensor` will finally call to the base class `BTHomeSensor`, adding the final bit of metadata, that the packet should be formatted as an unsigned int.
+For example, the `TemperatureSensor` has a single constructor which takes the floating point temperature (assumed to be celsius).  it then calls into its parent `SignedIntSensor`, providing the data, but also that the data is a temperature reading, scaled by 100.0.  `UnsignedIntSensor` will finally call to the base class `Sensor`, adding the final bit of metadata, that the packet should be formatted as an unsigned int.
 , etc
 The whole idea is to prevent the user from needing to know about the internals, just that it's a temperature reading or humidity, etc, with the metadata and scaling all handled invisibly.
+
+## BTHome Advertisement
+
+The BLE advertisement is build via the classes provided in the `bthome` component.  They are generally named in a self explanatory way.  The class will manage inserting standard BLE flags,
+optional complete local name, the service UUID and will populate the service data based on the sensors added to it.  If a given sensor has too large a payload to fit, the sensor will not
+be added and indication provided to the user.

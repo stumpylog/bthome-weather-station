@@ -1,8 +1,4 @@
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "BME280.h"
 #include "blackboard.h"
 #include "driver/gpio.h"
@@ -11,9 +7,10 @@ extern "C" {
 #include "i2cBus.h"
 #include "tasks.h"
 
-#define SENSOR_TASK_NAME  "sensor_task"
-#define I2C_MASTER_SCL_IO GPIO_NUM_22 /*!<gpio number for i2c master clock  */
-#define I2C_MASTER_SDA_IO GPIO_NUM_21 /*!<gpio number for i2c master data */
+#define SENSOR_TASK_NAME "sensor_task"
+
+static constexpr gpio_num_t I2C_MASTER_SCL_IO {GPIO_NUM_22};
+static constexpr gpio_num_t I2C_MASTER_SDA_IO {GPIO_NUM_21};
 
 i2cBus bus(I2C_NUM_0, I2C_MASTER_SCL_IO, I2C_MASTER_SDA_IO);
 
@@ -65,7 +62,3 @@ void task_read_sensors_entry(void* params)
     for (;;)
     { }
 }
-
-#ifdef __cplusplus
-}
-#endif

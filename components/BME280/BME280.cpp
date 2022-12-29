@@ -8,7 +8,7 @@ extern "C" {
 #include "endian.h"
 #include "esp_log.h"
 
-#include <math.h>
+#include <cmath>
 
 #define NAME "bme280"
 

@@ -4,7 +4,4 @@ idf_component_register(SRCS "main.cpp"
                             "task_ble.cpp"
                             INCLUDE_DIRS ".")
 
-add_subdirectory(bthome)
-add_subdirectory(sensors)
-
-target_link_libraries(${COMPONENT_LIB} PUBLIC bthome sensors)
+target_compile_options(${COMPONENT_LIB} PRIVATE -Wall -Wextra)

@@ -1,11 +1,21 @@
 
 - [Changelog](#changelog)
+  - [0.3.0](#030)
   - [0.2.2](#022)
   - [0.2.1](#021)
   - [0.2.0](#020)
   - [0.0.1](#001)
 
 # Changelog
+
+## 0.3.0
+
+- Advertisements are now built via class and are less handcrafted
+- Some initial work for encryption support
+- Internal cleanup for C style linkage
+- More correctly follow the ESP-IDF build system for components
+- Drops support for BTHome v1 format (requires Home Assistant 2022.12 or newer)
+- Added CI building against esp-idf v5 (the latest release)
 
 ## 0.2.2
 

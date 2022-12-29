@@ -1,12 +1,20 @@
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 #include "blackboard.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "tasks.h"
+
+// app_main must link to C code
+#ifdef __cplusplus
+extern "C" {
+#endif
+void app_main(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 void app_main(void)
 {
@@ -34,7 +42,3 @@ void app_main(void)
                             1                                    // pinned core
     );
 }
-
-#ifdef __cplusplus
-}
-#endif
