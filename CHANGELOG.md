@@ -15,6 +15,7 @@
 - Internal cleanup for C style linkage
 - More correctly follow the ESP-IDF build system for components
 - Drops support for BTHome v1 format (requires Home Assistant 2022.12 or newer)
+- Added CI building against esp-idf v5 (the latest release)
 
 ## 0.2.2
 

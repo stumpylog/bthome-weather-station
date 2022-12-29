@@ -5,9 +5,14 @@ on:
   pull_request:
 
 jobs:
-  ci-checks:
-    name: Checks
-    runs-on: ubuntu-latest
+  ci-checks-build:
+    name: Build for ${{ matrix.idf-version }} target ${{ matrix.chip-target }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        idf-version: ['v4.4', 'v5.0']
+        chip-target: ['esp32']
     steps:
       -
         name: Checkout repository
@@ -16,11 +21,11 @@ jobs:
         uses: actions/cache@v3
         with:
           path: build/
-          key: ${{ runner.os }}-esp-idf-v4.4
+          key: ${{ runner.os }}-esp-idf-${{ matrix.chip-target }}-${{ matrix.idf-version }}
       -
         name: esp-idf build
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: v4.4
-          target: esp32
+          esp_idf_version: ${{ matrix.idf-version }}
+          target: ${{ matrix.chip-target }}
           path: "."
