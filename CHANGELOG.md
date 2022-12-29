@@ -1,6 +1,6 @@
 
 - [Changelog](#changelog)
-  - [vNext](#vnext)
+  - [0.3.0](#030)
   - [0.2.2](#022)
   - [0.2.1](#021)
   - [0.2.0](#020)
@@ -8,7 +8,7 @@
 
 # Changelog
 
-## vNext
+## 0.3.0
 
 - Advertisements are now built via class and are less handcrafted
 - Some initial work for encryption support
