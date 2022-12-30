@@ -1,5 +1,6 @@
 
 #include "esp_log.h"
+#include "esp_mac.h"
 // TODO This header isn't found?
 // #include "mbedtls/ccm.h"
 #include "advertisement.h"
@@ -154,36 +155,39 @@ namespace bthome
         this->addMeasurement(packetIdData);
     }
 
-    /*EncryptedAdvertisement::EncryptedAdvertisement(uint32_t const countId, uint8_t const bindKey[])
-        : Advertisement(), m_serviceUuid(constants::ENCRYPTED_SERVICE_UUID)
+    EncryptedAdvertisement::EncryptedAdvertisement(uint32_t const countId,
+                                                   uint8_t const bindKey[constants::BIND_KEY_LEN])
     {
-        this->buildNonce(countId);
         memcpy(&this->bindKey[0], bindKey, constants::BIND_KEY_LEN);
+        this->buildNonce(countId);
     }
 
     EncryptedAdvertisement::EncryptedAdvertisement(std::string const& name, uint32_t const countId,
-                                                   uint8_t const bindKey[])
-        : Advertisement(name), m_serviceUuid(constants::ENCRYPTED_SERVICE_UUID)
+                                                   uint8_t const bindKey[constants::BIND_KEY_LEN])
     {
-        this->buildNonce(countId);
         memcpy(&this->bindKey[0], bindKey, constants::BIND_KEY_LEN);
+        this->buildNonce(countId);
     }
 
-    void EncryptedAdvertisement::buildNonce(uint32_t const countId)
+    void EncryptedAdvertisement::buildNonce(uint32_t const count)
     {
+        // Read the Bluetooth MAC address
         uint8_t macAddr[6];
-        uint8_t* const uuidPtr  = static_cast<uint8_t*>(&this->m_serviceUuid);
-        uint8_t* const countPtr = static_cast<uint8_t*>(&countId);
         ESP_ERROR_CHECK(esp_read_mac(&macAddr[0], ESP_MAC_BT));
 
+        // Build the noncethis->buildNonce(countId);
         memcpy(&this->nonce[0], &macAddr[0], 6);
-        memcpy(&this->nonce[6], uuidPtr, 2);
-        memcpy(&this->nonce[8], countPtr, 4);
-
-        // Get MAC address + UUID + count as bytes and store it
+        this->nonce[6] = constants::SERVICE_UUID_BYTES[0];
+        this->nonce[7] = constants::SERVICE_UUID_BYTES[1];
+        this->nonce[8] = (1 << constants::BTHOME_DEVICE_INFO_SHIFTS::ENCRYPTED) |
+                         (constants::BTHOME_V2 << constants::BTHOME_DEVICE_INFO_SHIFTS::VERSION);
+        this->nonce[9]  = count & 0xff;
+        this->nonce[10] = (count >> 8) & 0xff;
+        this->nonce[11] = (count >> 16) & 0xff;
+        this->nonce[12] = (count >> 24) & 0xff;
     }
 
-    const uint8_t* EncryptedAdvertisement::getPayload(void) const
+    /*const uint8_t* EncryptedAdvertisement::getPayload(void) const
     {
         uint8_t const randomThing = {0x11};
         uint8_t encryptedData[constants::BLE_ADVERT_MAX_LEN];

@@ -16,11 +16,19 @@ namespace bthome
     {
 
         constexpr uint16_t SERVICE_UUID {0xFCD2};
+        constexpr uint8_t SERVICE_UUID_BYTES[2] {0xFC, 0xD2};
         constexpr uint8_t BLE_ADVERT_MAX_LEN {31};
+        // Maximum size of a measurement's encoded value
         constexpr uint8_t MEASUREMENT_MAX_LEN {8};
-        constexpr uint8_t NONCE_LEN {12};
-        constexpr uint8_t BIND_KEY_LEN {12};
         constexpr uint8_t BTHOME_V2 {2};
+        // Length of the constructed nonce
+        //  +6 bytes - MAC address
+        //  +2 bytes - UUID
+        //  +1 byte  - BTHome device info
+        //  +4 bytes - counter
+        constexpr uint8_t NONCE_LEN {13};
+        // Length of the bind key in bytes
+        constexpr uint8_t BIND_KEY_LEN {16};
 
         enum ObjectId
         {

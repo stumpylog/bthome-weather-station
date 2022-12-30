@@ -7,9 +7,39 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace bthome
 {
+
+    class AdvertisementElement
+    {
+      public:
+        AdvertisementElement(uint8_t const type);
+        ~AdvertisementElement();
+        inline void writeByte(uint8_t const data);
+        inline void writeBytes(uint8_t const data[], uint8_t const length);
+        uint8_t data[constants::BLE_ADVERT_MAX_LEN];
+    };
+
+    class FlagsElement : public AdvertisementElement
+    {
+      public:
+        FlagsElement(void);
+        ~FlagsElement();
+    };
+
+    class LocalNameElement : public AdvertisementElement
+    {
+      public:
+        LocalNameElement(std::string const& name);
+    };
+
+    class ServiceDataElement : public AdvertisementElement
+    {
+      public:
+        ServiceDataElement(uint16_t const uuid);
+    };
 
     class Advertisement
     {
@@ -25,13 +55,14 @@ namespace bthome
         void reset(void);
 
       private:
+        std::vector<AdvertisementElement> elements {4};
+        // Where in the data buffer does the next data byte go
+        uint8_t m_dataIdx;
         void writeHeader(void);
         void writeUuid(void);
         void writeDeviceInfo(void);
         void writeByte(uint8_t const data);
 
-        // Where in the data buffer does the next data byte go
-        uint8_t m_dataIdx;
         // The actual data
         uint8_t m_data[constants::BLE_ADVERT_MAX_LEN];
 
@@ -51,19 +82,20 @@ namespace bthome
         AdvertisementWithId(std::string const& name, uint8_t const packetId);
     };
 
-    /*class EncryptedAdvertisement : public Advertisement
+    class EncryptedAdvertisement : public Advertisement
     {
       public:
-        EncryptedAdvertisement(uint32_t const countId, uint8_t const bindKey[]);
-        EncryptedAdvertisement(std::string const& name, uint32_t const countId, uint8_t const bindKey[]);
+        EncryptedAdvertisement(uint32_t const countId, uint8_t const bindKey[constants::BIND_KEY_LEN]);
+        EncryptedAdvertisement(std::string const& name, uint32_t const countId,
+                               uint8_t const bindKey[constants::BIND_KEY_LEN]);
 
       private:
-        void buildNonce(void);
+        void buildNonce(uint32_t const count);
         void encryptData(void);
 
         uint8_t nonce[constants::NONCE_LEN];
         uint8_t bindKey[constants::BIND_KEY_LEN];
-    };*/
+    };
 
 }; // namespace bthome
 
