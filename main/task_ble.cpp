@@ -75,6 +75,8 @@ uint8_t build_data_advert(uint8_t data[])
     advertisement.addMeasurement(humid);
     advertisement.addMeasurement(press);
 
+    advertisement.finalize();
+
     memcpy(&data[0], advertisement.getPayload(), advertisement.getPayloadSize());
 
     return advertisement.getPayloadSize();

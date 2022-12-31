@@ -1,12 +1,12 @@
 
+#include "advertisement.h"
+
 #include "esp_log.h"
 #include "esp_mac.h"
-// TODO This header isn't found?
-#include "advertisement.h"
 #include "mbedtls/ccm.h"
 
 #include <cstring>
-#include <string.h>
+#include <string>
 
 #define _ADVERT_LOG_NAME "advert"
 
@@ -15,7 +15,6 @@ namespace bthome
 
     Advertisement::Advertisement(void) : m_nextIdx(0), m_serviceDataLengthIdx(0), m_serviceDataStartIdx(0)
     {
-
         this->writeFlagsElement();
         this->writeServiceUUID();
         this->writeBthomeInfoByte();
@@ -68,10 +67,10 @@ namespace bthome
         this->m_data[this->m_nextIdx] = constants::BLE_ADVERT_DATA_TYPE::SERVICE_DATA;
         this->m_nextIdx++;
 
-        this->m_data[this->m_nextIdx] = 0xd2;
+        this->m_data[this->m_nextIdx] = constants::SERVICE_UUID_BYTES[1];
         this->m_nextIdx++;
 
-        this->m_data[this->m_nextIdx] = 0xfc;
+        this->m_data[this->m_nextIdx] = constants::SERVICE_UUID_BYTES[0];
         this->m_nextIdx++;
     }
 
@@ -111,6 +110,8 @@ namespace bthome
         return this->m_nextIdx;
     }
 
+    void Advertisement::finalize(void) { }
+
     AdvertisementWithId::AdvertisementWithId(uint8_t const packetId) : Advertisement()
     {
         Measurement packetIdData(constants::ObjectId::PACKET_ID, static_cast<uint64_t>(packetId));
@@ -128,7 +129,7 @@ namespace bthome
         : Advertisement()
     {
         std::memcpy(&this->bindKey[0], bindKey, constants::BIND_KEY_LEN);
-        this->buildNonce(countId);
+        this->initEncryption(countId);
     }
 
     EncryptedAdvertisement::EncryptedAdvertisement(std::string const& name, uint32_t const countId,
@@ -136,7 +137,12 @@ namespace bthome
         : Advertisement(name)
     {
         std::memcpy(&this->bindKey[0], bindKey, constants::BIND_KEY_LEN);
-        // this->buildNonce(countId);
+        this->initEncryption(countId);
+    }
+
+    EncryptedAdvertisement::~EncryptedAdvertisement()
+    {
+        mbedtls_ccm_free(&this->context);
     }
 
     void EncryptedAdvertisement::writeBthomeInfoByte(void)
@@ -149,8 +155,19 @@ namespace bthome
         this->m_serviceDataStartIdx = this->m_nextIdx;
     }
 
-    void EncryptedAdvertisement::buildNonce(uint32_t const count)
+    void EncryptedAdvertisement::initEncryption(uint32_t const count)
     {
+
+        // First, do some basic init of the encryption context
+        mbedtls_ccm_init(&this->context);
+        mbedtls_ccm_setkey(&this->context,
+                           // Using AES
+                           MBEDTLS_CIPHER_ID_AES, &this->bindKey[0],
+                           // Key size is in bits
+                           constants::BIND_KEY_LEN * 8);
+
+        // Second, build the nonce (aka initialization vector?)
+
         // Read the Bluetooth MAC address
         uint8_t macAddr[6];
         ESP_ERROR_CHECK(esp_read_mac(&macAddr[0], ESP_MAC_BT));
@@ -165,6 +182,40 @@ namespace bthome
         this->nonce[10] = (count >> 8) & 0xff;
         this->nonce[11] = (count >> 16) & 0xff;
         this->nonce[12] = (count >> 24) & 0xff;
+    }
+
+    void EncryptedAdvertisement::finalize(void)
+    {
+        // -1 length
+        // -2 UUID
+        // -1 BTHome info
+
+        uint8_t const cipherTextLen = this->m_data[this->m_serviceDataLengthIdx] - 4;
+        uint8_t ciphertext[cipherTextLen];
+        uint8_t mic[4];
+        mbedtls_ccm_encrypt_and_tag(&this->context,
+                                    // Length of the input in bytes
+                                    cipherTextLen,
+                                    // The nonce of IV
+                                    &this->nonce[0], constants::NONCE_LEN,
+                                    // No additional data
+                                    nullptr, 0,
+                                    // Input is only service data
+                                    &this->m_data[this->m_serviceDataStartIdx],
+                                    // Output
+                                    &ciphertext[0],
+                                    // 4 byte Message Integrity Check
+                                    &mic[0], 4);
+        // Replace service data with ciphertext
+        std::memcpy(&this->m_data[this->m_serviceDataStartIdx], &ciphertext[0], cipherTextLen);
+        // Append the count
+        std::memcpy(&this->m_data[this->m_nextIdx], &this->nonce[9], sizeof(uint32_t));
+        this->m_nextIdx += sizeof(uint32_t);
+        this->m_data[this->m_serviceDataLengthIdx] += sizeof(uint32_t);
+        // Append the MIC
+        std::memcpy(&this->m_data[this->m_nextIdx], &mic[0], sizeof(uint32_t));
+        this->m_nextIdx += sizeof(uint32_t);
+        this->m_data[this->m_serviceDataLengthIdx] += sizeof(uint32_t);
     }
 
     /*const uint8_t* EncryptedAdvertisement::getPayload(void)

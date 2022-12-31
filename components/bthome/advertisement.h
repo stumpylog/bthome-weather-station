@@ -3,11 +3,11 @@
 #define _BTHOME_ADVERTISEMENT_H_
 
 #include "constants.h"
+#include "mbedtls/ccm.h"
 #include "measurement.h"
 
 #include <cstdint>
 #include <string>
-#include <vector>
 
 namespace bthome
 {
@@ -53,14 +53,13 @@ namespace bthome
 
         const uint8_t* getPayload(void) const;
         uint32_t getPayloadSize(void) const;
-        void reset(void);
+        void finalize(void);
 
       protected:
         void writeFlagsElement(void);
         void writeLocalNameElement(std::string const& name);
         void writeServiceUUID(void);
         void writeBthomeInfoByte(void);
-        std::vector<AdvertisementElement> elements {4};
         uint8_t m_nextIdx;
         uint8_t m_serviceDataLengthIdx;
         uint8_t m_serviceDataStartIdx;
@@ -80,17 +79,19 @@ namespace bthome
         EncryptedAdvertisement(uint32_t const countId, uint8_t const bindKey[constants::BIND_KEY_LEN]);
         EncryptedAdvertisement(std::string const& name, uint32_t const countId,
                                uint8_t const bindKey[constants::BIND_KEY_LEN]);
+        ~EncryptedAdvertisement();
 
-        const uint8_t* getPayload(void) const;
+        void finalize(void);
 
       protected:
         void writeBthomeInfoByte(void);
 
       private:
-        void buildNonce(uint32_t const count);
+        void initEncryption(uint32_t const count);
 
         uint8_t nonce[constants::NONCE_LEN];
         uint8_t bindKey[constants::BIND_KEY_LEN];
+        mbedtls_ccm_context context;
     };
 
 }; // namespace bthome
