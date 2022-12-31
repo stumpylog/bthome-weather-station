@@ -114,8 +114,8 @@ namespace bthome
 
         enum BLE_ADVERT_DATA_TYPE
         {
-            TYPE          = 0x1,
-            COMPLETE_NAME = 0x9,
+            TYPE          = 0x01,
+            COMPLETE_NAME = 0x09,
             SERVICE_DATA  = 0x16
         };
 

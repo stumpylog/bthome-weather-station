@@ -120,7 +120,7 @@ void task_ble_entry(void* params)
 
             // Enter deep sleep
             ESP_LOGI(BLE_TASK_NAME, "Goodbye!");
-            esp_deep_sleep(SLEEP_5_MINUTES);
+            esp_deep_sleep(SLEEP_1_MINUTE);
         }
         else
         {

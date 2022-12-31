@@ -14,7 +14,7 @@ namespace bthome
     }
     AdvertisementElement::~AdvertisementElement() { }
 
-    inline void AdvertisementElement::writeByte(uint8_t const data)
+    void AdvertisementElement::writeByte(uint8_t const data)
     {
         if (this->data[0] < constants::BLE_ADVERT_MAX_LEN)
         {
@@ -23,13 +23,18 @@ namespace bthome
         }
     }
 
-    inline void AdvertisementElement::writeBytes(uint8_t const data[], uint8_t const length)
+    void AdvertisementElement::writeBytes(uint8_t const data[], uint8_t const length)
     {
-        if (this->data[0] + length < constants::BLE_ADVERT_MAX_LEN)
+        if ((this->data[0] + length) < constants::BLE_ADVERT_MAX_LEN)
         {
             std::memcpy(&this->data[this->data[0]], data, length);
             this->data[0] += length;
         }
+    }
+
+    uint8_t AdvertisementElement::size(void)
+    {
+        return this->data[0];
     }
 
     FlagsElement::FlagsElement(void) : AdvertisementElement(constants::BLE_ADVERT_DATA_TYPE::TYPE)
@@ -52,8 +57,8 @@ namespace bthome
     ServiceDataElement::ServiceDataElement(uint16_t const uuid)
         : AdvertisementElement(constants::BLE_ADVERT_DATA_TYPE::SERVICE_DATA)
     {
-        this->writeByte(constants::SERVICE_UUID_BYTES[0]);
-        this->writeByte(constants::SERVICE_UUID_BYTES[1]);
+        this->writeByte(uuid & 0xff);
+        this->writeByte((uuid >> 8) & 0xff);
     }
 
 }; // namespace bthome

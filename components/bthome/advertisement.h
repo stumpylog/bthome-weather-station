@@ -17,8 +17,9 @@ namespace bthome
       public:
         AdvertisementElement(uint8_t const type);
         ~AdvertisementElement();
-        inline void writeByte(uint8_t const data);
-        inline void writeBytes(uint8_t const data[], uint8_t const length);
+        void writeByte(uint8_t const data);
+        void writeBytes(uint8_t const data[], uint8_t const length);
+        uint8_t size(void);
         uint8_t data[constants::BLE_ADVERT_MAX_LEN];
     };
 
@@ -54,25 +55,16 @@ namespace bthome
         uint32_t getPayloadSize(void) const;
         void reset(void);
 
-      private:
+      protected:
+        void writeFlagsElement(void);
+        void writeLocalNameElement(std::string const& name);
+        void writeServiceUUID(void);
+        void writeBthomeInfoByte(void);
         std::vector<AdvertisementElement> elements {4};
-        // Where in the data buffer does the next data byte go
-        uint8_t m_dataIdx;
-        void writeHeader(void);
-        void writeUuid(void);
-        void writeDeviceInfo(void);
-        void writeByte(uint8_t const data);
-
-        // The actual data
+        uint8_t m_nextIdx;
+        uint8_t m_serviceDataLengthIdx;
+        uint8_t m_serviceDataStartIdx;
         uint8_t m_data[constants::BLE_ADVERT_MAX_LEN];
-
-        // Where in the data is the service data size located
-        // The size must be updated with every new sensor data inserted
-        uint8_t m_serviceDataSizeIdx;
-        // Index where data writing start, following header, UUID
-        uint8_t m_dataStartIdx;
-        // The UUID for the service data (unencrypted or not)
-        uint16_t m_serviceUuid;
     };
 
     class AdvertisementWithId : public Advertisement
@@ -89,9 +81,13 @@ namespace bthome
         EncryptedAdvertisement(std::string const& name, uint32_t const countId,
                                uint8_t const bindKey[constants::BIND_KEY_LEN]);
 
+        const uint8_t* getPayload(void) const;
+
+      protected:
+        void writeBthomeInfoByte(void);
+
       private:
         void buildNonce(uint32_t const count);
-        void encryptData(void);
 
         uint8_t nonce[constants::NONCE_LEN];
         uint8_t bindKey[constants::BIND_KEY_LEN];
