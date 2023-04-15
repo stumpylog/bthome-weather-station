@@ -26,7 +26,13 @@ static constexpr uint64_t SLEEP_5_MINUTES {SLEEP_1_MINUTE * 5};
 // Store the packet ID and persist it across sleep
 static RTC_DATA_ATTR uint8_t packetId {0};
 
+#define ENABLE_ENCRYPT 1
+#if ENABLE_ENCRYPT
+static uint8_t bindkey[] = {0x23, 0x1d, 0x39, 0xc1, 0xd7, 0xcc, 0x1a, 0xb1, 0xae, 0xe2, 0x24, 0xcd, 0x09, 0x6d, 0xb9, 0x32};
+static bthome::Advertisement advertisement(std::string("outside"), true, bindkey);
+#else
 static bthome::Advertisement advertisement(std::string("outside"));
+#endif
 
 static esp_ble_adv_params_t ble_adv_params = {
     .adv_int_min       = 0x20,
