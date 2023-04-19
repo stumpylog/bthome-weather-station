@@ -3,8 +3,8 @@
 #define _BTHOME_ADVERTISEMENT_H_
 
 #include "constants.h"
-#include "measurement.h"
 #include "mbedtls/ccm.h"
+#include "measurement.h"
 
 #include <cstdint>
 #include <string>
@@ -17,7 +17,7 @@ namespace bthome
       public:
         Advertisement(void);
         Advertisement(std::string const& name);
-        Advertisement(std::string const& name, bool encrypt, uint8_t *key);
+        Advertisement(std::string const& name, bool encrypt, uint8_t* key);
         ~Advertisement();
 
         bool addMeasurement(Measurement const& measurement);
@@ -32,9 +32,9 @@ namespace bthome
         void writeDeviceInfo(void);
         void writeByte(uint8_t const data);
         void writeCounter(void);
-        void writeMIC(uint8_t *mic);
+        void writeMIC(uint8_t* mic);
         void doInit(std::string const& name, bool encrypt);
-        void buildNonce(uint8_t *buf, uint32_t countId);
+        void buildNonce(uint8_t* buf, uint32_t countId);
 
         bool m_encryptEnable;
         uint32_t m_encryptCount;
