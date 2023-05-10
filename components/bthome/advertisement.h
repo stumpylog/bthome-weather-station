@@ -17,7 +17,7 @@ namespace bthome
       public:
         Advertisement(void);
         Advertisement(std::string const& name);
-        Advertisement(std::string const& name, bool encrypt, uint8_t* key);
+        Advertisement(std::string const& name, bool encrypt, uint8_t const* const key);
         ~Advertisement();
 
         bool addMeasurement(Measurement const& measurement);

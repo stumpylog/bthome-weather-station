@@ -2,6 +2,8 @@
 
 #include "advertisement.h"
 #include "blackboard.h"
+#include "config.h"
+#include "constants.h"
 #include "esp_bt.h"
 #include "esp_bt_defs.h"
 #include "esp_bt_main.h"
@@ -23,17 +25,7 @@ static constexpr uint32_t SECONDS_PER_MINUTE {60};
 static constexpr uint64_t SLEEP_1_MINUTE {SECONDS_PER_MINUTE * US_TO_S_FACTOR};
 static constexpr uint64_t SLEEP_5_MINUTES {SLEEP_1_MINUTE * 5};
 
-// Store the packet ID and persist it across sleep
-static RTC_DATA_ATTR uint8_t packetId {0};
-
-#define ENABLE_ENCRYPT 1
-#if ENABLE_ENCRYPT
-static uint8_t bindkey[] = {0x23, 0x1d, 0x39, 0xc1, 0xd7, 0xcc, 0x1a, 0xb1,
-                            0xae, 0xe2, 0x24, 0xcd, 0x09, 0x6d, 0xb9, 0x32};
-static bthome::Advertisement advertisement(std::string("outside"), true, bindkey);
-#else
-static bthome::Advertisement advertisement(std::string("outside"));
-#endif
+static bthome::Advertisement advertisement(config::NAME, config::ENABLE_ENCRYPT, config::BIND_KEY);
 
 static esp_ble_adv_params_t ble_adv_params = {
     .adv_int_min       = 0x20,
@@ -106,21 +98,27 @@ void task_ble_entry(void* params)
             // Encode sensor data
             uint8_t const dataLength = build_data_advert(&advertData[0]);
 
-            ESP_LOGI(BLE_TASK_NAME, "Advert size: %i bytes", dataLength);
+            if (dataLength > bthome::constants::BLE_ADVERT_MAX_LEN)
+            {
+                ESP_LOGE(BLE_TASK_NAME, "Advert size %i is too big, can't send it", dataLength);
+            }
+            else
+            {
+                ESP_LOGI(BLE_TASK_NAME, "Advert size: %i bytes", dataLength);
+                // Configure advertising data
+                ESP_ERROR_CHECK(esp_ble_gap_config_adv_data_raw(&advertData[0], dataLength));
 
-            // Configure advertising data
-            ESP_ERROR_CHECK(esp_ble_gap_config_adv_data_raw(&advertData[0], dataLength));
+                // Begin advertising
+                ESP_ERROR_CHECK(esp_ble_gap_start_advertising(&ble_adv_params));
 
-            // Begin advertising
-            ESP_ERROR_CHECK(esp_ble_gap_start_advertising(&ble_adv_params));
+                // Wait 1500ms for a few advertisement to go out
+                // The minimum time is 1s, the maximum time is 1.28s, so waiting
+                // 320ms beyond that
+                vTaskDelay(1500 / portTICK_PERIOD_MS);
 
-            // Wait 1500ms for a few advertisement to go out
-            // The minimum time is 1s, the maximum time is 1.28s, so waiting
-            // 320ms beyond that
-            vTaskDelay(1500 / portTICK_PERIOD_MS);
-
-            // Stop advertising data
-            ESP_ERROR_CHECK(esp_ble_gap_stop_advertising());
+                // Stop advertising data
+                ESP_ERROR_CHECK(esp_ble_gap_stop_advertising());
+            }
 
             // De-init all BLE related things
             ble_deinit();
@@ -131,7 +129,7 @@ void task_ble_entry(void* params)
         }
         else
         {
-            ESP_LOGW(BLE_TASK_NAME, "Timed out waiting for sensor data");
+            ESP_LOGE(BLE_TASK_NAME, "Timed out waiting for sensor data");
             // Handle the timeout somehow
         }
     }

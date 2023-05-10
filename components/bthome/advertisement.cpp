@@ -27,12 +27,12 @@ namespace bthome
         // Write the BLE flags
         this->writeHeader();
 
-        // Track where the length will go
         this->m_encryptEnable = encrypt;
 
         if (!name.empty())
         {
 
+            // Track where the length will go
             uint8_t startIdx = this->m_dataIdx;
             // Write the length as 0 for now
             this->writeByte(0);
@@ -52,7 +52,7 @@ namespace bthome
         // Follow up the name with the service data UUID (but no data yet)
         this->writeUuid();
 
-        // Write BTHome device into
+        // Write BTHome device info
         this->writeDeviceInfo();
 
         // Actual data goes here
@@ -69,7 +69,7 @@ namespace bthome
         doInit(name, false);
     }
 
-    Advertisement::Advertisement(std::string const& name, bool encrypt, uint8_t* key)
+    Advertisement::Advertisement(std::string const& name, bool encrypt, uint8_t const* const key)
     {
         memcpy(bindKey, key, sizeof(uint8_t) * constants::BIND_KEY_LEN);
         m_encryptCount = esp_random() % 0x427;
