@@ -8,6 +8,11 @@
 
 # Changelog
 
+## 0.4.0
+
+- Updated default building to esp-idf v4.4.4
+- Added support for bind key encryption [@junchao98](https://github.com/junchao98) in [#3](https://github.com/stumpylog/bthome-weather-station/pull/3)
+
 ## 0.3.0
 
 - Advertisements are now built via class and are less handcrafted
