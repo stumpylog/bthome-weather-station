@@ -19,10 +19,18 @@ I  personally use the VSCode addon to compile and flash to my device
 
 The SDK config targets a somewhat new revision of an ESP32.  I flash specifically on an Unexpected Maker TinyPcio.
 
+### Encryption
+
+Bind key encryption is now supported.
+
+Modify `main/config.h` to set ENABLE_ENCRYPT to `true` (it defaults to this) and configure your hexadecimal
+bind key value.  This is the same string Home Assistant will ask for.
+
 ## Contributing
 
 Contributions with new sensors, bug fixes, etc are happily accepted.  The project tries to follow the `git flow` naming, so naming branches `feature/` or `bugfix/`
-will help make it clear what its for.
+will help make it clear what its for.  If you use `git flow`, feature branches will be based on develop by default.  Otherwise, please base your branch on develop
+when creating it.
 
 ## References
 
@@ -33,11 +41,6 @@ will help make it clear what its for.
 
 ## Future Work
 
-### Encryption
-
-The BTHome format allows for encryption with a pre shared key, using AES-CCM.  The documenting is pretty scarce, with basically only an example Python
-script as an example.  For the ESP-IDF, encryption would be handled by the mbed-tls library.  This would require reverse engineering the Python and
-replicating it to that library.
 
 
 ### Infrequent Data

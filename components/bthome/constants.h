@@ -18,8 +18,10 @@ namespace bthome
         constexpr uint16_t SERVICE_UUID {0xFCD2};
         constexpr uint8_t BLE_ADVERT_MAX_LEN {31};
         constexpr uint8_t MEASUREMENT_MAX_LEN {8};
-        constexpr uint8_t NONCE_LEN {12};
-        constexpr uint8_t BIND_KEY_LEN {12};
+        constexpr uint8_t NONCE_LEN {13};
+        constexpr uint8_t COUNTER_LEN {4};
+        constexpr uint8_t MIC_LEN {4};
+        constexpr uint8_t BIND_KEY_LEN {16};
         constexpr uint8_t BTHOME_V2 {2};
 
         enum ObjectId
@@ -107,6 +109,7 @@ namespace bthome
         enum BLE_ADVERT_DATA_TYPE
         {
             TYPE          = 0x1,
+            SHORT_NAME    = 0x8,
             COMPLETE_NAME = 0x9,
             SERVICE_DATA  = 0x16
         };
