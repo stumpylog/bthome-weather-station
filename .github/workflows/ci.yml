@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        idf-version: ['v4.4', 'v5.0']
+        idf-version: ['v4.4', 'v5.0', "v5.1.1"]
         chip-target: ['esp32']
     steps:
       -
